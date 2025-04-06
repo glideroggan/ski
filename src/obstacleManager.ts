@@ -2,11 +2,10 @@ import p5 from 'p5';
 import { Sprite } from './sprite';
 import { Player } from './player';
 import { Game } from './game';
+import { Position } from './camera';
 
 export interface Obstacle {
-  // Change to use world coordinates for positions
-  worldX: number;
-  worldY: number;
+  worldPos:Position
   width: number;
   height: number;
   type: string;
@@ -25,7 +24,7 @@ export interface CollisionOffset {
 
 export class ObstacleManager {
   private p: p5;
-  private obstacles: Obstacle[] = [];
+  obstacles: Obstacle[] = [];
   private spriteSheet: p5.Image | null = null;
   private sprites: Map<string, Sprite> = new Map();
   private temporarySpeedBoost: boolean = false;
@@ -74,16 +73,11 @@ export class ObstacleManager {
     }
   }
   
-  public update(game: any): void {
-    this.game = game; // Make sure we have the latest game reference
-    
+  public update(game: Game): void {
     // Update existing obstacles
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
       // Convert world position to screen coordinates for visibility check
-      const screenPos = game.worldToScreen(
-        this.obstacles[i].worldX, 
-        this.obstacles[i].worldY
-      );
+      const screenPos = game.camera.worldToScreen(this.obstacles[i].worldPos);
       
       // Remove obstacles that are far off-screen
       if (screenPos.y < -200 || screenPos.x < -200 || screenPos.x > this.p.width + 200) {
@@ -102,7 +96,7 @@ export class ObstacleManager {
     }
   }
   
-  private spawnObstacle(game: any): void {
+  private spawnObstacle(game: Game): void {
     // Ensure we have sprites before creating obstacles
     if (this.sprites.size === 0) {
       return;
@@ -111,12 +105,16 @@ export class ObstacleManager {
     const types = ['tree', 'rock'];
     const type = types[Math.floor(Math.random() * types.length)];
     
-    // Generate a random screen position at the bottom
-    const screenX = Math.random() * this.p.width;
-    const screenY = this.p.height + 50; // Spawn just below the visible area
+    // Calculate a position just below the visible area in world coordinates
+    const screenWidth = this.p.width;
+    const screenHeight = this.p.height;
     
-    // Convert to world coordinates
-    const worldPos = game.screenToWorld(screenX, screenY);
+    // Random X position across the width of the screen
+    const screenX = Math.random() * screenWidth;
+    // Position below the bottom of the screen
+    const screenY = screenHeight + 50;
+    
+    
     
     // Get the sprite for this obstacle type
     const sprite = this.sprites.get(type) || null;
@@ -131,10 +129,12 @@ export class ObstacleManager {
     // Apply the sprite's scale factor to the obstacle dimensions
     const width = baseWidth * sprite.getScale();
     const height = baseHeight * sprite.getScale();
+
+    // Convert to world coordinates
+    const worldPos = game.camera.screenToWorld({x:screenX, y:screenY});
     
     const obstacle: Obstacle = {
-      worldX: worldPos.x,
-      worldY: worldPos.y,
+      worldPos,
       width,
       height,
       type,
@@ -143,18 +143,22 @@ export class ObstacleManager {
       render: function(p: p5, game: Game): void {
         if (this.sprite) {
           // Convert world coordinates to screen coordinates for rendering
-          const screenPos = game.worldToScreen(this.worldX, this.worldY);
+          const screenPos = game.camera.worldToScreen(this.worldPos);
           this.sprite.render(screenPos.x, screenPos.y, baseWidth, baseHeight);
         }
       },
       
       update: function(scrollSpeed: number, horizontalOffset: number = 0): void {
-        // No need to change Y - world stays fixed and camera moves
-        // The player is adding their offset to their world position instead
+        // Obstacles don't need to update their position - they're fixed in world space
+        // The camera movement creates the illusion of obstacle movement
       },
     };
     
     this.obstacles.push(obstacle);
+    
+    if (this.debug) {
+      console.log(`Spawned ${type} at world (${Math.round(worldPos.x)}, ${Math.round(worldPos.y)})`);
+    }
   }
   
   public render(): void {
@@ -176,11 +180,13 @@ export class ObstacleManager {
         const width = obstacle.width * obstacleAdjustment.widthFactor;
         const height = obstacle.height * obstacleAdjustment.heightFactor;
         
+        const adjustedPositionForCollisionBox = {
+          x: obstacle.worldPos.x + obstacleAdjustment.xOffset,
+          y: obstacle.worldPos.y + obstacleAdjustment.yOffset,
+        };
+
         // Convert to screen coordinates
-        const screenPos = this.game.worldToScreen(
-          obstacle.worldX + obstacleAdjustment.xOffset, 
-          obstacle.worldY
-        );
+        const screenPos = this.game.camera.worldToScreen(adjustedPositionForCollisionBox);
         
         // Draw the collision box
         this.p.rect(
@@ -214,8 +220,7 @@ export class ObstacleManager {
     
     // Simple box collision detection with adjusted hitboxes
     for (const obstacle of this.obstacles) {
-      const obstacleX = obstacle.worldX
-      const obstacleY = obstacle.worldY
+      const obstaclePos = obstacle.worldPos
       const obstacleWidth = obstacle.width
       const obstacleHeight = obstacle.height
       
@@ -224,8 +229,8 @@ export class ObstacleManager {
         { xOffset: 0, yOffset: 0, widthFactor: 0.7, heightFactor: 0.7 }; // Default if type not found
       
       // Apply obstacle-specific collision adjustments
-      const adjustedObstacleX = obstacleX + obstacleAdjustment.xOffset;
-      const adjustedObstacleY = obstacleY + obstacleAdjustment.yOffset;
+      const adjustedObstacleX = obstaclePos.x + obstacleAdjustment.xOffset;
+      const adjustedObstacleY = obstaclePos.y + obstacleAdjustment.yOffset;
       const adjustedObstacleWidth = obstacleWidth * obstacleAdjustment.widthFactor;
       const adjustedObstacleHeight = obstacleHeight * obstacleAdjustment.heightFactor;
       
@@ -237,7 +242,7 @@ export class ObstacleManager {
         adjustedPlayerY - adjustedPlayerHeight/2 < adjustedObstacleY + adjustedObstacleHeight/2
       ) {
         if (this.debug) {
-          console.log(`Collision detected with ${obstacle.type} at (${obstacleX}, ${obstacleY})`);
+          console.log(`Collision detected with ${obstacle.type} at (${obstaclePos.x}, ${obstaclePos.y})`);
         }
         return obstacle;
       }

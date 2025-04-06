@@ -1,4 +1,5 @@
 # TODO
+- fix depth checks, so that we can render characters in front of the obstacles
 - choose between silly characters
   - image up to the left corner of the screen
     - should react to different things happening in the game

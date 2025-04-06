@@ -1,6 +1,8 @@
 import p5 from 'p5';
 import { Sprite } from './sprite';
 import { CollisionOffset, Obstacle, ObstacleManager } from './obstacleManager';
+import { Game } from './game';
+import { Position } from './camera';
 
 export enum PlayerState {
   DOWN,
@@ -12,11 +14,9 @@ export enum PlayerState {
 
 export class Player {
   private p: p5;
-  x: number;
-  y: number;
   width: number = 50;
   height: number = 80;
-  
+
   private maxPlayerMovement: number = 3;
   private spriteSheet: p5.Image | null = null;
   private sprites: Map<PlayerState, Sprite> = new Map();
@@ -26,11 +26,13 @@ export class Player {
   private stateTransitionDelay: number = 10; // Frames to wait before allowing another state change
   private collisionEffect: number = 0; // For visual collision feedback
   private debug: boolean = false; // Debug mode
+  game: Game;
+  worldPos: Position;
 
-  constructor(p: p5, x: number, y: number) {
+  constructor(p: p5, pos: Position, game: Game) {
     this.p = p;
-    this.x = x;
-    this.y = y;
+    this.game = game;
+    this.worldPos = pos;
     this.loadAssets();
   }
 
@@ -64,33 +66,55 @@ export class Player {
 
     try {
       // Assuming the spritesheet is a 2x2 grid
-      const frameWidth = this.spriteSheet.width / 2;
+      const frameWidth = this.spriteSheet.width / 4;
       const frameHeight = this.spriteSheet.height / 2;
 
       // Map frames to player states
       this.sprites.set(PlayerState.DOWN,
-        new Sprite(this.p, this.spriteSheet, 0, 0, frameWidth, frameHeight));
-
-      this.sprites.set(PlayerState.RIGHT,
-        new Sprite(this.p, this.spriteSheet, frameWidth, 0, frameWidth, frameHeight));
-
-      this.sprites.set(PlayerState.RIGHT_DOWN,
         new Sprite(this.p, this.spriteSheet, 0, frameHeight, frameWidth, frameHeight));
 
-      this.sprites.set(PlayerState.LEFT,
-        new Sprite(this.p, this.spriteSheet, frameWidth, 0, frameWidth, frameHeight, true));
+      this.sprites.set(PlayerState.RIGHT_DOWN,
+        new Sprite(this.p, this.spriteSheet, frameWidth, frameHeight, frameWidth, frameHeight));
+
+      this.sprites.set(PlayerState.RIGHT,
+        new Sprite(this.p, this.spriteSheet, frameWidth * 2, frameHeight, frameWidth, frameHeight));
 
       this.sprites.set(PlayerState.LEFT_DOWN,
-        new Sprite(this.p, this.spriteSheet, 0, frameHeight, frameWidth, frameHeight, true));
+        new Sprite(this.p, this.spriteSheet, frameWidth, frameHeight, frameWidth, frameHeight, true));
+
+      this.sprites.set(PlayerState.LEFT,
+        new Sprite(this.p, this.spriteSheet, frameWidth * 2, frameHeight, frameWidth, frameHeight, true));
     } catch (error) {
       console.error("Error setting up player sprites:", error);
     }
   }
 
   public update(): void {
-    
-    // Keep player within screen bounds
-    this.x = this.p.constrain(this.x, this.width / 2, this.p.width - this.width / 2);
+
+    // increase world position to simulate movement
+    this.worldPos.y += 1;
+
+    // handle horizontal movement
+    switch (this.currentState) {
+      case PlayerState.LEFT:
+        this.worldPos.x -= this.maxPlayerMovement;
+        break;
+      case PlayerState.RIGHT:
+        this.worldPos.x += this.maxPlayerMovement;
+        break;
+      case PlayerState.LEFT_DOWN:
+        this.worldPos.x -= this.maxPlayerMovement / 2;
+        this.worldPos.y += this.maxPlayerMovement / 2;
+        break;
+      case PlayerState.RIGHT_DOWN:
+        this.worldPos.x += this.maxPlayerMovement / 2;
+        this.worldPos.y += this.maxPlayerMovement / 2;
+        break;
+      case PlayerState.DOWN:
+        // No horizontal movement when going straight down
+        this.worldPos.y += this.maxPlayerMovement;
+        break;
+    }
 
     // Update state transition timer
     if (this.stateTransitionTimer > 0) {
@@ -104,6 +128,7 @@ export class Player {
   }
 
   public render(): void {
+    console.debug('Player position:', this.worldPos.x, this.worldPos.y);
     if (!this.assetsLoaded || !this.spriteSheet || this.sprites.size === 0) {
       // Don't render anything if assets aren't loaded
       return;
@@ -129,7 +154,14 @@ export class Player {
       );
     }
 
-    sprite.render(this.x, this.y, this.width, this.height);
+    // Get screen position from world position using camera transformation
+    const screenPos = this.game.camera.worldToScreen(this.worldPos);
+
+    // Center the sprite on the player's position
+    const x = screenPos.x - this.width / 2;
+    const y = screenPos.y - this.height / 2;
+
+    sprite.render(x, y, this.width, this.height);
 
     if (this.collisionEffect > 0) {
       this.p.pop(); // Restore drawing state
@@ -137,21 +169,21 @@ export class Player {
 
     // Debug collision box
     if (this.debug) {
-      // // Draw overall collision box for reference (green)
+      // Draw player position indicator
       this.p.noFill();
+      this.p.stroke(0, 255, 0);
+      this.p.circle(screenPos.x, screenPos.y, 10);
 
-      // Draw 45-degree perspective hitbox (red)
+      // Draw hitbox
       this.p.stroke(255, 0, 0);
       this.p.rect(
-        this.x - (this.width * this.playerCollisionOffset.widthFactor) / 2,
-        (this.y + this.playerCollisionOffset.yOffset) - (this.height * this.playerCollisionOffset.heightFactor) / 2,
+        x + (this.width * (1 - this.playerCollisionOffset.widthFactor)) / 2,
+        y + this.playerCollisionOffset.yOffset,
         this.width * this.playerCollisionOffset.widthFactor,
         this.height * this.playerCollisionOffset.heightFactor
       );
     }
   }
-
-  
 
   public turnRight(): boolean {
     // Only allow state transition if the timer is at 0
