@@ -1,6 +1,6 @@
 import p5 from 'p5';
 import { Sprite } from './sprite';
-import { CollisionOffset } from './obstacleManager';
+import { CollisionOffset, Obstacle, ObstacleManager } from './obstacleManager';
 
 export enum PlayerState {
   DOWN,
@@ -217,14 +217,14 @@ export class Player {
     return this.currentState;
   }
 
-  public handleCollision(obstacle: any): void {
+  public handleCollision(obstacle: Obstacle): void {
     // Set collision effect for visual feedback (lasts 30 frames)
     this.collisionEffect = 30;
 
-    console.log('Player collided with obstacle:', obstacle.getType());
+    console.log('Player collided with obstacle:', obstacle.type);
 
     // Different effects based on obstacle type
-    switch (obstacle.getType()) {
+    switch (obstacle.type) {
       case 'tree':
         // Trees cause a significant slowdown
         this.collisionEffect = 45; // Longer effect

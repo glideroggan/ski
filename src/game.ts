@@ -19,7 +19,7 @@ export interface Touch {
 
 export class Game {
   private p: p5;
-  private player: Player;
+  player: Player;
   private obstacleManager: ObstacleManager;
   private inputHandler: InputHandler;
   private isPaused: boolean = false;
@@ -53,6 +53,7 @@ export class Game {
     this.p = p;
     this.inputHandler = new InputHandler();
     this.loadAssets();
+    
     // Position player at the top middle of the screen, facing down
     // Screen position is fixed, but we'll track world position separately
     this.player = new Player(this.p, this.p.width / 2, 150);
@@ -61,10 +62,9 @@ export class Game {
     this.playerWorldX = this.p.width / 2;
     this.playerWorldY = 150;
     
-    this.obstacleManager = new ObstacleManager(this.p);
-    this.skiTrack = new SkiTrack(this); // Pass 'this' to SkiTrack
+    this.obstacleManager = new ObstacleManager(this.p, this);
+    this.skiTrack = new SkiTrack(this);
     
-    // Add console message to help debug
     console.log("Game initialized. Press 'D' to toggle debug mode");
     this.setupKeyboardControls();
   }
@@ -161,27 +161,31 @@ export class Game {
     
     // Update player's world position based on direction
     this.playerWorldX += horizontalOffset;
-    this.playerWorldY -= this.getEffectiveScrollSpeed();
+    this.playerWorldY += this.getEffectiveScrollSpeed();
     
     // Update camera position to follow player in world space
     this.worldX = this.playerWorldX - this.p.width / 2;
     this.worldY = this.playerWorldY - 150; // Keep player at y=150 on screen
     
     // Update background reference positions for parallax effect
-    this.backgroundY = this.worldY; // Slower scroll for parallax effect
-    this.backgroundX = this.worldX;
+    this.backgroundY = this.worldY
+    this.backgroundX = this.worldX
     
-    // Update obstacles in world space
-    this.obstacleManager.update(this.getEffectiveScrollSpeed(), horizontalOffset);
+    // Update obstacles in world space - pass the entire game object
+    this.obstacleManager.update(this);
     
     // Add point to ski track if player is moving
     if (this.getEffectiveScrollSpeed() > 0 && !this.player.isInCollisionState()) {
-      this.skiTrack.addPoint(this.worldX, this.backgroundY); // Adjust Y position for ski track
+      this.skiTrack.addPoint(this.playerWorldX, this.playerWorldY);
     }
     
     // Only check for collisions if player is not already in collision state
     if (!this.player.isInCollisionState()) {
-      const collidedObstacle = this.obstacleManager.checkCollision(this.player)
+      const collidedObstacle = this.obstacleManager.checkCollision(
+        this.playerWorldX, 
+        this.playerWorldY, 
+        this.player
+      );
       if (collidedObstacle) {
         this.player.handleCollision(collidedObstacle);
       }
@@ -341,9 +345,14 @@ export class Game {
     const bgWidth = this.backgroundImage.width;
     const bgHeight = this.backgroundImage.height;
     
-    // Draw the background with seamless tiling, incorporating X and Y movement
-    for (let x = -bgWidth + (this.backgroundX % bgWidth); x < this.p.width + bgWidth; x += bgWidth) {
-      for (let y = -bgHeight + (this.backgroundY % bgHeight); y < this.p.height + bgHeight; y += bgHeight) {
+    // FIXED: Invert the Y component for upward scrolling background
+    // We need to multiply by -0.8 instead of 0.8 for parallax effect
+    const bgOffsetY = -(this.worldY) % bgHeight;
+    const bgOffsetX = (this.worldX) % bgWidth;
+    
+    // Draw the background with seamless tiling and correct direction for movement
+    for (let x = -bgWidth + bgOffsetX; x < this.p.width + bgWidth; x += bgWidth) {
+      for (let y = -bgHeight + bgOffsetY; y < this.p.height + bgHeight; y += bgHeight) {
         this.p.image(this.backgroundImage, x, y);
       }
     }
@@ -456,7 +465,7 @@ export class Game {
     this.player = new Player(this.p, this.p.width / 2, 150);
     
     // Clear obstacles
-    this.obstacleManager = new ObstacleManager(this.p);
+    this.obstacleManager = new ObstacleManager(this.p, this);
     if (this.spriteSheet) {
       this.obstacleManager.setSpriteSheet(this.spriteSheet);
     }
