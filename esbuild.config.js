@@ -35,7 +35,7 @@ const context = await build.context({
       assets: [
         { from: ['src/index.html'], to: ['index.html'] },
         { from: ['src/styles/style.css'], to: ['style.css'] },
-        { from: ['assets/*'], to: ['assets'] }
+        { from: ['assets/*.png'], to: ['assets'] }
       ]
     })
   ],

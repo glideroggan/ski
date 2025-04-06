@@ -1,4 +1,8 @@
 # TODO
+- fix a depth map to the snowy background
+  - the values in the depth map should influence the height of the player, so that it looks like they are going up and down on the snowy parts
+  - if we are able, we can try to rotate the player character to match the slope of the snow, which would be super cool
+- fix the little face in the corner that can react to things happening in the game
 - fix depth checks, so that we can render characters in front of the obstacles
 - choose between silly characters
   - image up to the left corner of the screen

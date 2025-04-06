@@ -218,7 +218,7 @@ export class Game {
     // }
 
     // Display controls information
-    // this.renderControlsInfo();
+    this.renderControlsInfo();
   }
 
   // private renderScrollingBackground(): void {
@@ -285,7 +285,7 @@ export class Game {
     this.p.fill(255);
     this.p.textSize(12);
     this.p.textAlign(this.p.RIGHT, this.p.BOTTOM);
-    this.p.text("LEFT/RIGHT: Turn | DOWN: Speed Boost | D: Debug Mode", this.p.width - 10, this.p.height - 10);
+    this.p.text("LEFT/RIGHT: Turn | SPACE: Pause | D: Debug Mode", this.p.width - 10, this.p.height - 10);
 
     // In debug mode, show more information
     if (this.debug) {
@@ -294,7 +294,18 @@ export class Game {
       this.p.text("DEBUG MODE", 10, 30);
       this.p.text(`Player position: (${Math.round(this.player.worldPos.x)}, ${Math.round(this.player.worldPos.y)})`, 10, 50);
       this.p.text(`Player state: ${PlayerState[this.player.getCurrentState()]}`, 10, 70);
-      this.p.text(`Collision: ${this.player.isInCollisionState() ? 'YES' : 'NO'}`, 10, 90);
+      
+      // Add collision count and special states
+      if (this.player.isFlying()) {
+        this.p.fill(255, 0, 255); // Purple for flying
+        this.p.text("FLYING!", 10, 90);
+      } else if (this.player.isCrashed()) {
+        this.p.fill(255, 0, 0); // Red for crashed
+        this.p.text("CRASHED!", 10, 90);
+      } else {
+        this.p.fill(255, 255, 0);
+        this.p.text(`Collision: ${this.player.isInCollisionState() ? 'YES' : 'NO'}`, 10, 90);
+      }
     }
   }
 

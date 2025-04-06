@@ -9,7 +9,13 @@ export enum PlayerState {
   RIGHT_DOWN,
   RIGHT,
   LEFT_DOWN,
-  LEFT
+  LEFT,
+  FLYING_DOWN,
+  FLYING_RIGHT_DOWN,
+  FLYING_RIGHT,
+  FLYING_LEFT_DOWN,
+  FLYING_LEFT,
+  CRASHED
 }
 
 export class Player {
@@ -28,6 +34,12 @@ export class Player {
   private debug: boolean = false; // Debug mode
   game: Game;
   worldPos: Position;
+
+  private collisionCount: number = 0;
+  private flyingTimer: number = 0;
+  private readonly flyingDuration: number = 60; // Flying state lasts for 60 frames (1 second at 60fps)
+  private crashRecoveryTimer: number = 0;
+  private readonly crashRecoveryDuration: number = 180; // 3 seconds to recover from crash
 
   constructor(p: p5, pos: Position, game: Game) {
     this.p = p;
@@ -84,36 +96,93 @@ export class Player {
 
       this.sprites.set(PlayerState.LEFT,
         new Sprite(this.p, this.spriteSheet, frameWidth * 2, frameHeight, frameWidth, frameHeight, true));
+
+      // Flying states use the same sprite with slight rotation
+      this.sprites.set(PlayerState.FLYING_DOWN,
+        new Sprite(this.p, this.spriteSheet, frameWidth * 3, 0, frameWidth, frameHeight));
+        
+      this.sprites.set(PlayerState.FLYING_RIGHT_DOWN,
+        new Sprite(this.p, this.spriteSheet, frameWidth * 3, 0, frameWidth, frameHeight));
+        
+      this.sprites.set(PlayerState.FLYING_RIGHT,
+        new Sprite(this.p, this.spriteSheet, frameWidth * 3, 0, frameWidth, frameHeight));
+        
+      this.sprites.set(PlayerState.FLYING_LEFT_DOWN,
+        new Sprite(this.p, this.spriteSheet, frameWidth * 3, 0, frameWidth, frameHeight, true));
+        
+      this.sprites.set(PlayerState.FLYING_LEFT,
+        new Sprite(this.p, this.spriteSheet, frameWidth * 3, 0, frameWidth, frameHeight, true));
+
+      // Crashed state
+      this.sprites.set(PlayerState.CRASHED,
+        new Sprite(this.p, this.spriteSheet, 0, 0, frameWidth, frameHeight));
+
     } catch (error) {
       console.error("Error setting up player sprites:", error);
     }
   }
 
   public update(): void {
+    // Update flying timer
+    if (this.isFlying() && this.flyingTimer > 0) {
+      this.flyingTimer--;
+      
+      // When flying timer ends, transition to crashed state
+      if (this.flyingTimer === 0) {
+        this.transitionToCrashed();
+      }
+    }
+    
+    // Update crash recovery timer
+    if (this.isCrashed() && this.crashRecoveryTimer > 0) {
+      this.crashRecoveryTimer--;
+      
+      // When recovery timer ends, reset to regular state
+      if (this.crashRecoveryTimer === 0) {
+        this.resetAfterCrash();
+      }
+    }
 
-    // increase world position to simulate movement
-    this.worldPos.y += 1;
-
-    // handle horizontal movement
-    switch (this.currentState) {
-      case PlayerState.LEFT:
-        this.worldPos.x -= this.maxPlayerMovement;
-        break;
-      case PlayerState.RIGHT:
-        this.worldPos.x += this.maxPlayerMovement;
-        break;
-      case PlayerState.LEFT_DOWN:
-        this.worldPos.x -= this.maxPlayerMovement / 2;
-        this.worldPos.y += this.maxPlayerMovement / 2;
-        break;
-      case PlayerState.RIGHT_DOWN:
-        this.worldPos.x += this.maxPlayerMovement / 2;
-        this.worldPos.y += this.maxPlayerMovement / 2;
-        break;
-      case PlayerState.DOWN:
-        // No horizontal movement when going straight down
-        this.worldPos.y += this.maxPlayerMovement;
-        break;
+    // Only perform movement if not crashed
+    if (!this.isCrashed()) {
+      // Calculate movement speed (faster when flying)
+      const speedMultiplier = this.isFlying() ? 2.0 : 1.0;
+      const baseSpeed = this.maxPlayerMovement * speedMultiplier;
+      
+      // Move based on current state
+      switch (this.currentState) {
+        case PlayerState.LEFT:
+        case PlayerState.FLYING_LEFT:
+          this.worldPos.x -= baseSpeed;
+          this.worldPos.y += 1;
+          break;
+        case PlayerState.RIGHT:
+        case PlayerState.FLYING_RIGHT:
+          this.worldPos.x += baseSpeed;
+          this.worldPos.y += 1;
+          break;
+        case PlayerState.LEFT_DOWN:
+        case PlayerState.FLYING_LEFT_DOWN:
+          this.worldPos.x -= baseSpeed / 2;
+          this.worldPos.y += 1;
+          this.worldPos.y += baseSpeed / 2;
+          break;
+        case PlayerState.RIGHT_DOWN:
+        case PlayerState.FLYING_RIGHT_DOWN:
+          this.worldPos.x += baseSpeed / 2;
+          this.worldPos.y += 1;
+          this.worldPos.y += baseSpeed / 2;
+          break;
+        case PlayerState.DOWN:
+        case PlayerState.FLYING_DOWN:
+          // No horizontal movement when going straight down
+          this.worldPos.y += 1;
+          this.worldPos.y += baseSpeed;
+          break;
+        case PlayerState.CRASHED:
+          // No movement when crashed
+          break;
+      }
     }
 
     // Update state transition timer
@@ -136,31 +205,31 @@ export class Player {
       x: this.worldPos.x + this.playerCollisionOffset.xOffset,
       y: this.worldPos.y + this.playerCollisionOffset.yOffset
     };
-    
+
     const adjustedWidth = this.width * this.playerCollisionOffset.widthFactor;
     const adjustedHeight = this.height * this.playerCollisionOffset.heightFactor;
-    
+
     return {
       position: adjustedPosition,
       width: adjustedWidth,
       height: adjustedHeight
     };
   }
-  
+
   /**
    * Renders the debug hitbox for the player
    */
   public renderDebugHitbox(): void {
     if (!this.debug) return;
-    
+
     const hitbox = this.getCollisionHitbox();
     const screenPos = this.game.camera.worldToScreen(hitbox.position);
-    
+
     // Draw player position indicator
     this.p.noFill();
     this.p.stroke(0, 255, 0);
     this.p.circle(screenPos.x, screenPos.y, 10);
-    
+
     // Draw hitbox
     this.p.stroke(255, 0, 0);
     this.p.rect(
@@ -216,8 +285,8 @@ export class Player {
   }
 
   public turnRight(): boolean {
-    // Only allow state transition if the timer is at 0
-    if (this.stateTransitionTimer > 0) {
+    // Prevent turning if crashed or flying
+    if (this.isCrashed() || this.isFlying() || this.stateTransitionTimer > 0) {
       return false;
     }
 
@@ -246,8 +315,8 @@ export class Player {
   }
 
   public turnLeft(): boolean {
-    // Only allow state transition if the timer is at 0
-    if (this.stateTransitionTimer > 0) {
+    // Prevent turning if crashed or flying
+    if (this.isCrashed() || this.isFlying() || this.stateTransitionTimer > 0) {
       return false;
     }
 
@@ -280,28 +349,109 @@ export class Player {
   }
 
   public handleCollision(obstacle: Obstacle): void {
-    // Set collision effect for visual feedback (lasts 30 frames)
+    // Set collision effect for visual feedback
     this.collisionEffect = 30;
-
+    
     console.log('Player collided with obstacle:', obstacle.type);
-
-    // Different effects based on obstacle type
-    switch (obstacle.type) {
-      case 'tree':
-        // Trees cause a significant slowdown
-        this.collisionEffect = 45; // Longer effect
-        break;
-      case 'rock':
-        // Rocks cause a medium slowdown
-        this.collisionEffect = 30;
-        break;
-      default:
-        this.collisionEffect = 20;
+    
+    // Increment collision count
+    this.collisionCount++;
+    console.log(`Collision count: ${this.collisionCount}`);
+    
+    // Different effects based on collision count and obstacle type
+    if (this.collisionCount >= 4) {
+      // On fourth collision, transition to flying state
+      this.transitionToFlyingState();
+    } else {
+      // Different effects based on obstacle type
+      switch (obstacle.type) {
+        case 'tree':
+          // Trees cause a significant slowdown
+          this.collisionEffect = 45; // Longer effect
+          break;
+        case 'rock':
+          // Rocks cause a medium slowdown
+          this.collisionEffect = 30;
+          break;
+        default:
+          this.collisionEffect = 20;
+      }
     }
   }
 
+  /**
+   * Transitions the player to the appropriate flying state based on current direction
+   */
+  private transitionToFlyingState(): void {
+    // Map regular states to flying states
+    switch (this.currentState) {
+      case PlayerState.DOWN:
+        this.currentState = PlayerState.FLYING_DOWN;
+        break;
+      case PlayerState.RIGHT_DOWN:
+        this.currentState = PlayerState.FLYING_RIGHT_DOWN;
+        break;
+      case PlayerState.RIGHT:
+        this.currentState = PlayerState.FLYING_RIGHT;
+        break;
+      case PlayerState.LEFT_DOWN:
+        this.currentState = PlayerState.FLYING_LEFT_DOWN;
+        break;
+      case PlayerState.LEFT:
+        this.currentState = PlayerState.FLYING_LEFT;
+        break;
+      default:
+        // If already in a flying or crashed state, do nothing
+        return;
+    }
+    
+    // Set flying timer
+    this.flyingTimer = this.flyingDuration;
+    
+    // Apply special flying effect
+    this.collisionEffect = this.flyingDuration;
+    
+    console.log(`Player is now flying! Current state: ${PlayerState[this.currentState]}`);
+  }
+  
+  /**
+   * Transitions the player to crashed state
+   */
+  private transitionToCrashed(): void {
+    this.currentState = PlayerState.CRASHED;
+    this.crashRecoveryTimer = this.crashRecoveryDuration;
+    console.log("Player has crashed!");
+  }
+  
+  /**
+   * Resets player after a crash
+   */
+  private resetAfterCrash(): void {
+    this.currentState = PlayerState.DOWN;
+    this.collisionCount = 0;
+    console.log("Player recovered from crash");
+  }
+  
+  /**
+   * Checks if player is in a flying state
+   */
+  public isFlying(): boolean {
+    return this.currentState === PlayerState.FLYING_DOWN ||
+           this.currentState === PlayerState.FLYING_RIGHT_DOWN ||
+           this.currentState === PlayerState.FLYING_RIGHT ||
+           this.currentState === PlayerState.FLYING_LEFT_DOWN ||
+           this.currentState === PlayerState.FLYING_LEFT;
+  }
+  
+  /**
+   * Checks if player is in crashed state
+   */
+  public isCrashed(): boolean {
+    return this.currentState === PlayerState.CRASHED;
+  }
+  
   public isInCollisionState(): boolean {
-    return this.collisionEffect > 0;
+    return this.collisionEffect > 0 || this.isFlying() || this.isCrashed();
   }
 
   public toggleDebug(): void {
