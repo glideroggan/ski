@@ -22,8 +22,10 @@ export interface Touch {
 
 export class Game {
   private p: p5;
+  
   player: Player;
-  private obstacleManager: ObstacleManager;
+  obstacleManager: ObstacleManager;
+
   private inputHandler: InputHandler;
   private isPaused: boolean = false;
   private gameState: GameState = GameState.PLAYING; // Default state
@@ -47,14 +49,14 @@ export class Game {
   backgroundX: number = 0;
   camera: Camera;
   world: World;
-  collisionHandler: CollisionHandler
+  private collisionHandler: CollisionHandler;
 
   constructor(p: p5) {
     this.p = p;
     this.inputHandler = new InputHandler();
     this.loadAssets();
 
-    this.camera = new Camera(this.p, this)
+    this.camera = new Camera(this.p, this);
 
     this.world = new World(this.p, this.camera, this);
 

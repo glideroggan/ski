@@ -39,7 +39,7 @@ export class Player {
   // Player collision adjustment for 45-degree perspective
   playerCollisionOffset: CollisionOffset = {
     xOffset: 0,
-    yOffset: 30,
+    yOffset: 20,
     widthFactor: 0.6,
     heightFactor: 0.15, // Focus on upper part of player for collision
   };
@@ -158,8 +158,8 @@ export class Player {
     const screenPos = this.game.camera.worldToScreen(this.worldPos);
 
     // Center the sprite on the player's position
-    const x = screenPos.x - this.width / 2;
-    const y = screenPos.y - this.height / 2;
+    const x = screenPos.x;
+    const y = screenPos.y;
 
     sprite.render(x, y, this.width, this.height);
 
@@ -169,18 +169,26 @@ export class Player {
 
     // Debug collision box
     if (this.debug) {
+      const width = this.width * this.playerCollisionOffset.widthFactor;
+      const height = this.height * this.playerCollisionOffset.heightFactor;
+      const adjustedPositionForCollisionBox = {
+        x: this.worldPos.x + this.playerCollisionOffset.xOffset,
+        y: this.worldPos.y + this.playerCollisionOffset.yOffset,
+      };
+      // Convert to screen coordinates
+      const screenPosDebug = this.game.camera.worldToScreen(adjustedPositionForCollisionBox);
       // Draw player position indicator
       this.p.noFill();
       this.p.stroke(0, 255, 0);
-      this.p.circle(screenPos.x, screenPos.y, 10);
+      this.p.circle(screenPosDebug.x, screenPosDebug.y, 10);
 
       // Draw hitbox
       this.p.stroke(255, 0, 0);
       this.p.rect(
-        x + (this.width * (1 - this.playerCollisionOffset.widthFactor)) / 2,
-        y + this.playerCollisionOffset.yOffset,
-        this.width * this.playerCollisionOffset.widthFactor,
-        this.height * this.playerCollisionOffset.heightFactor
+        screenPosDebug.x - width / 2,
+        screenPosDebug.y,
+        width,
+        height
       );
     }
   }

@@ -33,7 +33,7 @@ export class ObstacleManager {
   private game: Game; // Reference to the game for coordinate conversion
   
   // Collision hitbox adjustments for each obstacle type
-  private collisionAdjustments: Map<string, CollisionOffset> = new Map([
+  collisionAdjustments: Map<string, CollisionOffset> = new Map([
     ['tree', { xOffset: 0, yOffset: 30, widthFactor: 0.4, heightFactor: 0.3 }], // Tree collision at bottom part only
     ['rock', { xOffset: 0, yOffset: 0, widthFactor: 0.7, heightFactor: 0.6 }],   // Rocks have more uniform hitbox
   ]);
