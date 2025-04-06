@@ -5,7 +5,7 @@ import { Game } from './game';
 import { Position } from './camera';
 
 export interface Obstacle {
-  worldPos:Position
+  worldPos: Position
   width: number;
   height: number;
   type: string;
@@ -161,6 +161,50 @@ export class ObstacleManager {
     }
   }
   
+  /**
+   * Gets the adjusted collision hitbox for an obstacle
+   */
+  public getObstacleHitbox(obstacle: Obstacle): { position: Position, width: number, height: number } {
+    // Get collision adjustment for this obstacle type
+    const adjustment = this.collisionAdjustments.get(obstacle.type) || 
+      { xOffset: 0, yOffset: 0, widthFactor: 0.7, heightFactor: 0.7 }; // Default if type not found
+    
+    // Apply obstacle-specific collision adjustments
+    const adjustedPosition: Position = {
+      x: obstacle.worldPos.x + adjustment.xOffset,
+      y: obstacle.worldPos.y + adjustment.yOffset
+    };
+    
+    const adjustedWidth = obstacle.width * adjustment.widthFactor;
+    const adjustedHeight = obstacle.height * adjustment.heightFactor;
+    
+    return {
+      position: adjustedPosition,
+      width: adjustedWidth,
+      height: adjustedHeight
+    };
+  }
+  
+  /**
+   * Renders debug hitbox for an obstacle
+   */
+  public renderObstacleDebugHitbox(obstacle: Obstacle): void {
+    if (!this.debug || !this.game) return;
+    
+    const hitbox = this.getObstacleHitbox(obstacle);
+    const screenPos = this.game.camera.worldToScreen(hitbox.position);
+    
+    // Draw the collision box
+    this.p.noFill();
+    this.p.stroke(255, 0, 0);
+    this.p.rect(
+      screenPos.x - hitbox.width / 2,
+      screenPos.y - hitbox.height / 2,
+      hitbox.width,
+      hitbox.height
+    );
+  }
+  
   public render(): void {
     if (!this.game) return;
     
@@ -168,34 +212,7 @@ export class ObstacleManager {
       obstacle.render(this.p, this.game);
       
       // If debug mode is enabled, draw the collision boxes
-      if (this.debug) {
-        this.p.noFill();
-        this.p.stroke(255, 0, 0);
-        
-        // Get collision adjustment for this obstacle type
-        const obstacleAdjustment = this.collisionAdjustments.get(obstacle.type) || 
-          { xOffset: 0, yOffset: 0, widthFactor: 0.7, heightFactor: 0.7 };
-        
-        // Calculate the collision box dimensions
-        const width = obstacle.width * obstacleAdjustment.widthFactor;
-        const height = obstacle.height * obstacleAdjustment.heightFactor;
-        
-        const adjustedPositionForCollisionBox = {
-          x: obstacle.worldPos.x + obstacleAdjustment.xOffset,
-          y: obstacle.worldPos.y + obstacleAdjustment.yOffset,
-        };
-
-        // Convert to screen coordinates
-        const screenPos = this.game.camera.worldToScreen(adjustedPositionForCollisionBox);
-        
-        // Draw the collision box
-        this.p.rect(
-          screenPos.x - width/2,
-          screenPos.y - height/2,
-          width,
-          height
-        );
-      }
+      this.renderObstacleDebugHitbox(obstacle);
     }
     
     // Show obstacle count in debug mode

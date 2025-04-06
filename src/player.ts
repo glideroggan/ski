@@ -127,6 +127,50 @@ export class Player {
     }
   }
 
+  /**
+   * Returns the adjusted collision hitbox for the player
+   */
+  public getCollisionHitbox(): { position: Position, width: number, height: number } {
+    // Apply collision offset for better collision detection
+    const adjustedPosition: Position = {
+      x: this.worldPos.x + this.playerCollisionOffset.xOffset,
+      y: this.worldPos.y + this.playerCollisionOffset.yOffset
+    };
+    
+    const adjustedWidth = this.width * this.playerCollisionOffset.widthFactor;
+    const adjustedHeight = this.height * this.playerCollisionOffset.heightFactor;
+    
+    return {
+      position: adjustedPosition,
+      width: adjustedWidth,
+      height: adjustedHeight
+    };
+  }
+  
+  /**
+   * Renders the debug hitbox for the player
+   */
+  public renderDebugHitbox(): void {
+    if (!this.debug) return;
+    
+    const hitbox = this.getCollisionHitbox();
+    const screenPos = this.game.camera.worldToScreen(hitbox.position);
+    
+    // Draw player position indicator
+    this.p.noFill();
+    this.p.stroke(0, 255, 0);
+    this.p.circle(screenPos.x, screenPos.y, 10);
+    
+    // Draw hitbox
+    this.p.stroke(255, 0, 0);
+    this.p.rect(
+      screenPos.x - hitbox.width / 2,
+      screenPos.y - hitbox.height / 2,
+      hitbox.width,
+      hitbox.height
+    );
+  }
+
   public render(): void {
     console.debug('Player position:', this.worldPos.x, this.worldPos.y);
     if (!this.assetsLoaded || !this.spriteSheet || this.sprites.size === 0) {
@@ -167,30 +211,8 @@ export class Player {
       this.p.pop(); // Restore drawing state
     }
 
-    // Debug collision box
-    if (this.debug) {
-      const width = this.width * this.playerCollisionOffset.widthFactor;
-      const height = this.height * this.playerCollisionOffset.heightFactor;
-      const adjustedPositionForCollisionBox = {
-        x: this.worldPos.x + this.playerCollisionOffset.xOffset,
-        y: this.worldPos.y + this.playerCollisionOffset.yOffset,
-      };
-      // Convert to screen coordinates
-      const screenPosDebug = this.game.camera.worldToScreen(adjustedPositionForCollisionBox);
-      // Draw player position indicator
-      this.p.noFill();
-      this.p.stroke(0, 255, 0);
-      this.p.circle(screenPosDebug.x, screenPosDebug.y, 10);
-
-      // Draw hitbox
-      this.p.stroke(255, 0, 0);
-      this.p.rect(
-        screenPosDebug.x - width / 2,
-        screenPosDebug.y,
-        width,
-        height
-      );
-    }
+    // Render debug hitbox if debug mode is enabled
+    this.renderDebugHitbox();
   }
 
   public turnRight(): boolean {

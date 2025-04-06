@@ -12,65 +12,25 @@ export class CollisionHandler {
             return;
         }
 
-        // Get player's world position and dimensions for collision detection
-        const playerPos = player.worldPos;
-        const playerWidth = player.width;
-        const playerHeight = player.height;
-        
-        // Apply player collision offset for better collision detection
-        const adjustedPlayerPos: Position = {
-            x: playerPos.x + player.playerCollisionOffset.xOffset,
-            y: playerPos.y + player.playerCollisionOffset.yOffset
-        };
-        
-        const adjustedPlayerWidth = playerWidth * player.playerCollisionOffset.widthFactor;
-        const adjustedPlayerHeight = playerHeight * player.playerCollisionOffset.heightFactor;
+        // Get player's adjusted collision hitbox
+        const playerHitbox = player.getCollisionHitbox();
         
         // Check for collisions with each obstacle
         for (const obstacle of obstacles) {
-            const obstaclePos = obstacle.worldPos;
-            const obstacleWidth = obstacle.width;
-            const obstacleHeight = obstacle.height;
-            
-            // Get collision adjustment for this obstacle type from the obstacle manager
-            const obstacleManager = this.game.obstacleManager;
-            
-            // Get the obstacle-specific collision adjustment if available
-            let obstacleAdjustment;
-            if (obstacleManager.collisionAdjustments && obstacleManager.collisionAdjustments.get) {
-                obstacleAdjustment = obstacleManager.collisionAdjustments.get(obstacle.type);
-            }
-            
-            // Use default if specific adjustment not found
-            if (!obstacleAdjustment) {
-                obstacleAdjustment = { 
-                    xOffset: 0, 
-                    yOffset: 0, 
-                    widthFactor: 0.7, 
-                    heightFactor: 0.7 
-                };
-            }
-            
-            // Apply obstacle-specific collision adjustments
-            const adjustedObstaclePos: Position = {
-                x: obstaclePos.x + obstacleAdjustment.xOffset,
-                y: obstaclePos.y + obstacleAdjustment.yOffset
-            };
-            
-            const adjustedObstacleWidth = obstacleWidth * obstacleAdjustment.widthFactor;
-            const adjustedObstacleHeight = obstacleHeight * obstacleAdjustment.heightFactor;
+            // Get obstacle's adjusted collision hitbox
+            const obstacleHitbox = this.game.obstacleManager.getObstacleHitbox(obstacle);
             
             // Check for collision using AABB (Axis-Aligned Bounding Box) intersection
             if (this.checkRectIntersection(
-                adjustedPlayerPos, adjustedPlayerWidth, adjustedPlayerHeight,
-                adjustedObstaclePos, adjustedObstacleWidth, adjustedObstacleHeight
+                playerHitbox.position, playerHitbox.width, playerHitbox.height,
+                obstacleHitbox.position, obstacleHitbox.width, obstacleHitbox.height
             )) {
                 // Collision detected! Notify player
                 player.handleCollision(obstacle);
                 
                 // For debugging
                 if (this.game.debug) {
-                    console.log(`Collision detected with ${obstacle.type} at world position (${Math.round(obstaclePos.x)}, ${Math.round(obstaclePos.y)})`);
+                    console.log(`Collision detected with ${obstacle.type} at world position (${Math.round(obstacle.worldPos.x)}, ${Math.round(obstacle.worldPos.y)})`);
                 }
                 
                 // Only handle one collision at a time
@@ -102,5 +62,13 @@ export class CollisionHandler {
             rect1Bottom > rect2Top &&
             rect1Top < rect2Bottom
         );
+    }
+    
+    // Method to draw debug visualization for collision detection
+    public renderDebug(): void {
+        if (!this.game.debug) return;
+        
+        // Nothing to render here as hitboxes are now drawn by the respective entities
+        // We could add additional collision-specific debugging here if needed
     }
 }
