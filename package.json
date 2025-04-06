@@ -1,0 +1,22 @@
+{
+  "name": "ski-game",
+  "version": "1.0.0",
+  "description": "A ski game with scrolling background and obstacles",
+  "main": "dist/sketch.js",
+  "type": "module",
+  "scripts": {
+    "build": "node esbuild.config.js",
+    "dev": "node esbuild.config.js --watch",
+    "watch": "tsc --emitDeclarationOnly -w",
+    "start": "yarn build"
+  },
+  "dependencies": {
+    "p5": "^1.7.0"
+  },
+  "devDependencies": {
+    "@types/p5": "^1.6.2",
+    "esbuild": "^0.19.2",
+    "esbuild-plugin-copy": "^2.1.1",
+    "typescript": "^5.1.6"
+  }
+}
