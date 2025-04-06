@@ -1,5 +1,6 @@
 import p5 from 'p5';
 import { Sprite } from './sprite';
+import { CollisionOffset } from './obstacleManager';
 
 export enum PlayerState {
   DOWN,
@@ -11,10 +12,11 @@ export enum PlayerState {
 
 export class Player {
   private p: p5;
-  private x: number;
-  private y: number;
-  private width: number = 50;
-  private height: number = 80;
+  x: number;
+  y: number;
+  width: number = 50;
+  height: number = 80;
+  
   private maxPlayerMovement: number = 3;
   private spriteSheet: p5.Image | null = null;
   private sprites: Map<PlayerState, Sprite> = new Map();
@@ -24,7 +26,7 @@ export class Player {
   private stateTransitionDelay: number = 10; // Frames to wait before allowing another state change
   private collisionEffect: number = 0; // For visual collision feedback
   private debug: boolean = false; // Debug mode
-  
+
   constructor(p: p5, x: number, y: number) {
     this.p = p;
     this.x = x;
@@ -32,8 +34,16 @@ export class Player {
     this.loadAssets();
   }
 
+  // Player collision adjustment for 45-degree perspective
+  playerCollisionOffset: CollisionOffset = {
+    xOffset: 0,
+    yOffset: 30,
+    widthFactor: 0.6,
+    heightFactor: 0.15, // Focus on upper part of player for collision
+  };
+
   private loadAssets(): void {
-    this.p.loadImage('assets/player.png', 
+    this.p.loadImage('assets/player.png',
       (img: p5.Image) => {
         this.spriteSheet = img;
         console.log("Player spritesheet loaded. Dimensions:", img.width, "x", img.height);
@@ -51,91 +61,60 @@ export class Player {
       console.error("Cannot setup player sprites: spritesheet is invalid");
       return;
     }
-    
+
     try {
-      // Check if the spritesheet is a single row of sprites or multiple rows
-      let frameWidth, frameHeight;
-      let isMultiRow = false;
-      
-      // If width/height ratio seems more like a grid than a strip
-      if (this.spriteSheet.width / this.spriteSheet.height < 2) {
-        // This suggests we have a grid of sprites (2x2 or similar)
-        isMultiRow = true;
-        frameWidth = this.spriteSheet.width / 2;
-        frameHeight = this.spriteSheet.height / 2;
-      } else {
-        // This suggests we have a horizontal strip of sprites
-        frameWidth = this.spriteSheet.width / 3;
-        frameHeight = this.spriteSheet.height;
-      }
-      
-      if (isMultiRow) {
-        // Multi-row layout (2x2 grid)
-        this.sprites.set(PlayerState.DOWN, 
-          new Sprite(this.p, this.spriteSheet, 0, 0, frameWidth, frameHeight));
-        
-        this.sprites.set(PlayerState.RIGHT_DOWN, 
-          new Sprite(this.p, this.spriteSheet, frameWidth, 0, frameWidth, frameHeight));
-        
-        this.sprites.set(PlayerState.RIGHT, 
-          new Sprite(this.p, this.spriteSheet, 0, frameHeight, frameWidth, frameHeight));
-        
-        // Create mirrored sprites for left movement
-        this.sprites.set(PlayerState.LEFT_DOWN, 
-          new Sprite(this.p, this.spriteSheet, frameWidth, 0, frameWidth, frameHeight, true));
-        
-        this.sprites.set(PlayerState.LEFT, 
-          new Sprite(this.p, this.spriteSheet, 0, frameHeight, frameWidth, frameHeight, true));
-      } else {
-        // Single-row layout (3 sprites in a row)
-        this.sprites.set(PlayerState.DOWN, 
-          new Sprite(this.p, this.spriteSheet, 0, 0, frameWidth, frameHeight));
-        
-        this.sprites.set(PlayerState.RIGHT_DOWN, 
-          new Sprite(this.p, this.spriteSheet, frameWidth, 0, frameWidth, frameHeight));
-        
-        this.sprites.set(PlayerState.RIGHT, 
-          new Sprite(this.p, this.spriteSheet, frameWidth * 2, 0, frameWidth, frameHeight));
-        
-        // Create mirrored sprites for left movement
-        this.sprites.set(PlayerState.LEFT_DOWN, 
-          new Sprite(this.p, this.spriteSheet, frameWidth, 0, frameWidth, frameHeight, true));
-        
-        this.sprites.set(PlayerState.LEFT, 
-          new Sprite(this.p, this.spriteSheet, frameWidth * 2, 0, frameWidth, frameHeight, true));
-      }
+      // Assuming the spritesheet is a 2x2 grid
+      const frameWidth = this.spriteSheet.width / 2;
+      const frameHeight = this.spriteSheet.height / 2;
+
+      // Map frames to player states
+      this.sprites.set(PlayerState.DOWN,
+        new Sprite(this.p, this.spriteSheet, 0, 0, frameWidth, frameHeight));
+
+      this.sprites.set(PlayerState.RIGHT,
+        new Sprite(this.p, this.spriteSheet, frameWidth, 0, frameWidth, frameHeight));
+
+      this.sprites.set(PlayerState.RIGHT_DOWN,
+        new Sprite(this.p, this.spriteSheet, 0, frameHeight, frameWidth, frameHeight));
+
+      this.sprites.set(PlayerState.LEFT,
+        new Sprite(this.p, this.spriteSheet, frameWidth, 0, frameWidth, frameHeight, true));
+
+      this.sprites.set(PlayerState.LEFT_DOWN,
+        new Sprite(this.p, this.spriteSheet, 0, frameHeight, frameWidth, frameHeight, true));
     } catch (error) {
       console.error("Error setting up player sprites:", error);
     }
   }
-  
+
   public update(): void {
+    
     // Keep player within screen bounds
     this.x = this.p.constrain(this.x, this.width / 2, this.p.width - this.width / 2);
-    
+
     // Update state transition timer
     if (this.stateTransitionTimer > 0) {
       this.stateTransitionTimer--;
     }
-    
+
     // Update collision effect
     if (this.collisionEffect > 0) {
       this.collisionEffect--;
     }
   }
-  
+
   public render(): void {
     if (!this.assetsLoaded || !this.spriteSheet || this.sprites.size === 0) {
       // Don't render anything if assets aren't loaded
       return;
     }
-    
+
     const sprite = this.sprites.get(this.currentState);
     if (!sprite) {
       // Skip rendering if sprite isn't available
       return;
     }
-    
+
     // Apply visual effect if collision is active
     if (this.collisionEffect > 0) {
       this.p.push();
@@ -149,35 +128,37 @@ export class Player {
         this.p.random(-shakeAmount, shakeAmount)
       );
     }
-    
+
     sprite.render(this.x, this.y, this.width, this.height);
-    
+
     if (this.collisionEffect > 0) {
       this.p.pop(); // Restore drawing state
     }
-    
+
     // Debug collision box
     if (this.debug) {
+      // // Draw overall collision box for reference (green)
       this.p.noFill();
-      this.p.stroke(0, 255, 0);
-      const collisionMargin = 0.7; // Match the collision detection margin
-      const adjustedWidth = this.width * collisionMargin;
-      const adjustedHeight = this.height * collisionMargin;
+
+      // Draw 45-degree perspective hitbox (red)
+      this.p.stroke(255, 0, 0);
       this.p.rect(
-        this.x - adjustedWidth/2,
-        this.y - adjustedHeight/2,
-        adjustedWidth,
-        adjustedHeight
+        this.x - (this.width * this.playerCollisionOffset.widthFactor) / 2,
+        (this.y + this.playerCollisionOffset.yOffset) - (this.height * this.playerCollisionOffset.heightFactor) / 2,
+        this.width * this.playerCollisionOffset.widthFactor,
+        this.height * this.playerCollisionOffset.heightFactor
       );
     }
   }
+
   
+
   public turnRight(): boolean {
     // Only allow state transition if the timer is at 0
     if (this.stateTransitionTimer > 0) {
       return false;
     }
-    
+
     // Progressive state transition when turning right
     switch (this.currentState) {
       case PlayerState.LEFT:
@@ -196,18 +177,18 @@ export class Player {
         // Already at maximum right turn
         return false;
     }
-    
+
     // Set timer to prevent rapid state changes
     this.stateTransitionTimer = this.stateTransitionDelay;
     return true;
   }
-  
+
   public turnLeft(): boolean {
     // Only allow state transition if the timer is at 0
     if (this.stateTransitionTimer > 0) {
       return false;
     }
-    
+
     // Progressive state transition when turning left
     switch (this.currentState) {
       case PlayerState.RIGHT:
@@ -226,24 +207,24 @@ export class Player {
         // Already at maximum left turn
         return false;
     }
-    
+
     // Set timer to prevent rapid state changes
     this.stateTransitionTimer = this.stateTransitionDelay;
     return true;
   }
-  
+
   public getCurrentState(): PlayerState {
     return this.currentState;
   }
-  
+
   public handleCollision(obstacle: any): void {
     // Set collision effect for visual feedback (lasts 30 frames)
     this.collisionEffect = 30;
-    
+
     console.log('Player collided with obstacle:', obstacle.getType());
-    
+
     // Different effects based on obstacle type
-    switch(obstacle.getType()) {
+    switch (obstacle.getType()) {
       case 'tree':
         // Trees cause a significant slowdown
         this.collisionEffect = 45; // Longer effect
@@ -256,29 +237,12 @@ export class Player {
         this.collisionEffect = 20;
     }
   }
-  
+
   public isInCollisionState(): boolean {
     return this.collisionEffect > 0;
   }
-  
+
   public toggleDebug(): void {
     this.debug = !this.debug;
-  }
-  
-  // For collision detection
-  public getX(): number {
-    return this.x;
-  }
-  
-  public getY(): number {
-    return this.y;
-  }
-  
-  public getWidth(): number {
-    return this.width;
-  }
-  
-  public getHeight(): number {
-    return this.height;
   }
 }

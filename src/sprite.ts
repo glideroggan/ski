@@ -8,6 +8,7 @@ export class Sprite {
   private srcWidth: number;
   private srcHeight: number;
   private flip: boolean;
+  private scale: number;
   
   constructor(
     p: p5,
@@ -16,7 +17,8 @@ export class Sprite {
     srcY: number,
     srcWidth: number,
     srcHeight: number,
-    flip: boolean = false
+    flip: boolean = false,
+    scale: number = 1.0
   ) {
     this.p = p;
     this.spriteSheet = spriteSheet;
@@ -25,11 +27,13 @@ export class Sprite {
     this.srcWidth = srcWidth;
     this.srcHeight = srcHeight;
     this.flip = flip;
+    this.scale = scale;
   }
   
   public render(x: number, y: number, width?: number, height?: number): void {
-    const w = width || this.srcWidth;
-    const h = height || this.srcHeight;
+    // Apply scale factor to width and height if provided
+    const w = width ? width * this.scale : this.srcWidth * this.scale;
+    const h = height ? height * this.scale : this.srcHeight * this.scale;
     
     // Save the current transformation state
     this.p.push();
@@ -43,7 +47,6 @@ export class Sprite {
       this.p.translate(-x, -y);
     }
 
-    // After drawing, we'll restore the transformation state with this.p.pop()
     // Draw the specific part of the spritesheet
     this.p.image(
       this.spriteSheet,
@@ -57,5 +60,13 @@ export class Sprite {
       this.srcHeight
     );
     this.p.pop(); // Restore the transformation state
+  }
+  
+  public setScale(scale: number): void {
+    this.scale = scale;
+  }
+  
+  public getScale(): number {
+    return this.scale;
   }
 }

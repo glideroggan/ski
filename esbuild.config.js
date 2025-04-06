@@ -34,7 +34,7 @@ const context = await build.context({
     copy({
       assets: [
         { from: ['src/index.html'], to: ['index.html'] },
-        { from: ['style.css'], to: ['style.css'] },
+        { from: ['src/styles/style.css'], to: ['style.css'] },
         { from: ['assets/*'], to: ['assets'] }
       ]
     })

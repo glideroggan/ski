@@ -7,8 +7,8 @@ const sketch = (p: p5) => {
 
   p.setup = () => {
     // Create a canvas that fits precisely in the container
-    const canvasWidth = 800;
-    const canvasHeight = 600;
+    const canvasWidth = 1024;
+    const canvasHeight = 768;
     
     // Get the canvas container
     const gameContainer = document.getElementById('game-container');
@@ -33,12 +33,12 @@ const sketch = (p: p5) => {
   };
 
   p.keyPressed = () => {
-    game.handleKeyPressed(p.keyCode);
+    game.handleKeyPressed(p.keyCode, p.key);
     // return false; // Prevent default behavior
   };
 
   p.keyReleased = () => {
-    game.handleKeyReleased(p.keyCode);
+    game.handleKeyReleased(p.keyCode, p.key);
     // return false; // Prevent default behavior
   };
 

@@ -23,13 +23,11 @@ Can also increase their speed by pressing down
 
 
 ## Assets
-- character sprites
-- background images
-  - for sky?
+- ✔️character sprites
 - obstacle sprites
   - snowman
-  - tree
-  - rock
+  - ✔️tree
+  - ✔️rock
   - other skiers
   - other things 
     - poop

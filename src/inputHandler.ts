@@ -1,7 +1,5 @@
-import { Touch } from './game';
-
 export class InputHandler {
-  private keysDown: Set<number> = new Set();
+  private keysDown: Set<{keyCode?:number, key?:string}> = new Set();
   private touchLeft: boolean = false;
   private touchRight: boolean = false;
   private touchDown: boolean = false;
@@ -10,16 +8,16 @@ export class InputHandler {
     // Initialize input handling
   }
   
-  public setKeyDown(keyCode: number): void {
-    this.keysDown.add(keyCode);
+  public setKeyDown(keyCode: number, key:string): void {
+    this.keysDown.add({keyCode, key});
   }
   
-  public setKeyUp(keyCode: number): void {
-    this.keysDown.delete(keyCode);
+  public setKeyUp(keyCode: number, key:string): void {
+    this.keysDown.delete({keyCode, key});
   }
   
-  public isKeyDown(keyCode: number): boolean {
-    return this.keysDown.has(keyCode);
+  public isKeyDown(key?:string, keyCode?: number): boolean {
+    return this.keysDown.has({keyCode, key});
   }
   
   public clearKeys(): void {
