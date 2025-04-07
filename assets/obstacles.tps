@@ -34,7 +34,7 @@
         <key>dataFormat</key>
         <string>spritesheet-only</string>
         <key>textureFileName</key>
-        <filename></filename>
+        <filename>obstacles.png</filename>
         <key>flipPVR</key>
         <false/>
         <key>pvrQualityLevel</key>
@@ -167,8 +167,9 @@
         </struct>
         <key>individualSpriteSettings</key>
         <map type="IndividualSpriteSettingsMap">
-            <key type="filename">C:/Users/glide/Downloads/final ski/obstacles/rocks.png</key>
-            <key type="filename">C:/Users/glide/Downloads/final ski/obstacles/tree1.png</key>
+            <key type="filename">final ski/obstacles/rocks.png</key>
+            <key type="filename">final ski/obstacles/snowman.png</key>
+            <key type="filename">final ski/obstacles/tree1.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
@@ -190,7 +191,7 @@
             <struct type="SpriteSheet">
                 <key>files</key>
                 <array>
-                    <filename>C:/Users/glide/Downloads/final ski/obstacles</filename>
+                    <filename>final ski/obstacles</filename>
                 </array>
             </struct>
         </map>

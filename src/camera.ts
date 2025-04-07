@@ -32,6 +32,8 @@ export class Camera {
         // Make the camera follow the player
         if (this.game.player) {
             this.worldPos = { ...this.game.player.worldPos };
+            // make the camera be a bit before the player
+            this.worldPos.y += this.p.height / 4 - this.game.player.height / 2;
         }
     }
 }

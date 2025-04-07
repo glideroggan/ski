@@ -1,10 +1,16 @@
 import p5 from 'p5';
 import { Sprite } from './sprite';
 import { Player } from './player';
-import { Game } from './game';
+import { Game, RenderableObject } from './game';
 import { Position } from './camera';
 
-export interface Obstacle {
+// Interface for obstacle dimensions
+export interface ObstacleDimensions {
+  width: number;
+  height: number;
+}
+
+export interface Obstacle extends RenderableObject {
   worldPos: Position
   width: number;
   height: number;
@@ -31,11 +37,20 @@ export class ObstacleManager {
   private spawnCounter: number = 0;
   private debug: boolean = false; // Set to true to show collision boxes
   private game: Game; // Reference to the game for coordinate conversion
+  private types:string[] = ['tree', 'rock', 'snowman'];
+  
+  // Store dimensions for each obstacle type
+  private obstacleDimensions: Map<string, ObstacleDimensions> = new Map([
+    ['tree', { width: 60, height: 80 }],
+    ['rock', { width: 40, height: 40 }],
+    ['snowman', { width: 60, height: 60 }]
+  ]);
   
   // Collision hitbox adjustments for each obstacle type
   collisionAdjustments: Map<string, CollisionOffset> = new Map([
     ['tree', { xOffset: 0, yOffset: 30, widthFactor: 0.4, heightFactor: 0.3 }], // Tree collision at bottom part only
     ['rock', { xOffset: 0, yOffset: 0, widthFactor: 0.7, heightFactor: 0.6 }],   // Rocks have more uniform hitbox
+    ['snowman', { xOffset: 0, yOffset: 10, widthFactor: 0.5, heightFactor: 0.4 }], 
   ]);
   
   
@@ -61,13 +76,15 @@ export class ObstacleManager {
     try {
       // Assuming two obstacle types side by side in the spritesheet
       const numObstacles = 2;
-      const frameWidth = this.spriteSheet.width / numObstacles;
-      const frameHeight = this.spriteSheet.height;
+      let frameWidth = this.spriteSheet.width / numObstacles;
+      const frameHeight = this.spriteSheet.height / 2;
       
       // Create sprites for each obstacle type with appropriate scaling
       this.sprites.set('rock', new Sprite(this.p, this.spriteSheet, 0, 0, frameWidth, frameHeight, false, 1.0));
       // Make trees bigger with a 1.5x scale factor
-      this.sprites.set('tree', new Sprite(this.p, this.spriteSheet, frameWidth, 0, frameWidth, frameHeight, false, 1.5));
+      this.sprites.set('tree', new Sprite(this.p, this.spriteSheet, 0, frameHeight, frameWidth, frameHeight, false, 1.7));
+
+      this.sprites.set('snowman', new Sprite(this.p, this.spriteSheet, frameWidth, 0, frameWidth, frameHeight, false, 1));
     } catch (error) {
       console.error("Error setting up obstacle sprites:", error);
     }
@@ -102,8 +119,8 @@ export class ObstacleManager {
       return;
     }
     
-    const types = ['tree', 'rock'];
-    const type = types[Math.floor(Math.random() * types.length)];
+    
+    const type = this.types[Math.floor(Math.random() * this.types.length)];
     
     // Calculate a position just below the visible area in world coordinates
     const screenWidth = this.p.width;
@@ -115,20 +132,19 @@ export class ObstacleManager {
     const screenY = screenHeight + 50;
     
     
-    
     // Get the sprite for this obstacle type
     const sprite = this.sprites.get(type) || null;
     if (!sprite) {
+      console.warn(`Sprite for type ${type} not found`);
       return; // Skip creating obstacles if the sprite isn't available
     }
     
-    // Different sizes based on obstacle type
-    const baseWidth = type === 'tree' ? 60 : 40;
-    const baseHeight = type === 'tree' ? 80 : 40;
+    // Get dimensions from the centralized map
+    const dimensions = this.obstacleDimensions.get(type) || { width: 40, height: 40 }; // Default if not found
     
     // Apply the sprite's scale factor to the obstacle dimensions
-    const width = baseWidth * sprite.getScale();
-    const height = baseHeight * sprite.getScale();
+    const width = dimensions.width * sprite.getScale();
+    const height = dimensions.height * sprite.getScale();
 
     // Convert to world coordinates
     const worldPos = game.camera.screenToWorld({x:screenX, y:screenY});
@@ -144,7 +160,10 @@ export class ObstacleManager {
         if (this.sprite) {
           // Convert world coordinates to screen coordinates for rendering
           const screenPos = game.camera.worldToScreen(this.worldPos);
-          this.sprite.render(screenPos.x, screenPos.y, baseWidth, baseHeight);
+          
+          // Get the base dimensions for rendering
+          const baseDimensions = game.obstacleManager.getObstacleDimensions(this.type);
+          this.sprite.render(screenPos.x, screenPos.y, baseDimensions.width, baseDimensions.height);
         }
       },
       
@@ -159,6 +178,14 @@ export class ObstacleManager {
     if (this.debug) {
       console.log(`Spawned ${type} at world (${Math.round(worldPos.x)}, ${Math.round(worldPos.y)})`);
     }
+  }
+  
+  /**
+   * Getter for obstacle dimensions
+   */
+  public getObstacleDimensions(type: string): ObstacleDimensions {
+    // Return dimensions for this type, or default if not found
+    return this.obstacleDimensions.get(type) || { width: 40, height: 40 };
   }
   
   /**

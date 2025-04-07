@@ -1,7 +1,7 @@
 import p5 from 'p5';
 import { Sprite } from './sprite';
 import { CollisionOffset, Obstacle, ObstacleManager } from './obstacleManager';
-import { Game } from './game';
+import { Game, RenderableObject } from './game';
 import { Position } from './camera';
 
 export enum PlayerState {
@@ -18,7 +18,7 @@ export enum PlayerState {
   CRASHED
 }
 
-export class Player {
+export class Player implements RenderableObject {
   private p: p5;
   width: number = 50;
   height: number = 80;
@@ -283,7 +283,6 @@ export class Player {
   }
 
   public render(): void {
-    console.debug('Player position:', this.worldPos.x, this.worldPos.y);
     if (!this.assetsLoaded || !this.spriteSheet || this.sprites.size === 0) {
       // Don't render anything if assets aren't loaded
       return;

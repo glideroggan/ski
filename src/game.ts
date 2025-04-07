@@ -1,11 +1,18 @@
 import { Player, PlayerState } from './player';
-import { ObstacleManager } from './obstacleManager';
+import { ObstacleManager, Obstacle } from './obstacleManager';
 import { InputHandler } from './inputHandler';
 import p5 from 'p5';
 import { SkiTrack } from './skiTrack';
 import { Camera } from './camera';
 import { World } from './world';
 import { CollisionHandler } from './collisionHandler';
+import { Position } from './camera';
+
+// Interface for objects that can be rendered with depth sorting
+export interface RenderableObject {
+  worldPos: Position;
+  render(p: p5, game: Game): void;
+}
 
 export enum GameState {
   MENU,
@@ -209,9 +216,43 @@ export class Game {
     // Render ski tracks BEFORE player and obstacles so they appear underneath
     this.skiTrack.render(this.p);
 
-    // Render game entities
-    this.obstacleManager.render();
-    this.player.render();
+    // Collect all renderable objects for depth sorting
+    const renderableObjects: RenderableObject[] = [];
+    
+    // Add player to the renderable objects
+    renderableObjects.push(this.player);
+    
+    // Add obstacles to the renderable objects
+    this.obstacleManager.obstacles.forEach(obstacle => {
+      renderableObjects.push(obstacle);
+    });
+    
+    // Sort objects by Y position (smaller Y values first = further away)
+    renderableObjects.sort((a, b) => a.worldPos.y - b.worldPos.y);
+    
+    // Render objects in Y-order
+    for (const object of renderableObjects) {
+      if (object === this.player) {
+        this.player.render();
+      } else {
+        // It's an obstacle
+        const obstacle = object as Obstacle;
+        obstacle.render(this.p, this);
+        
+        // If debug mode is enabled, draw the collision boxes for obstacles
+        if (this.debug) {
+          this.obstacleManager.renderObstacleDebugHitbox(obstacle);
+        }
+      }
+    }
+
+    // Show debug info for obstacles
+    if (this.debug) {
+      this.p.fill(255);
+      this.p.textSize(12);
+      this.p.textAlign(this.p.LEFT, this.p.TOP);
+      this.p.text(`Obstacles: ${this.obstacleManager.obstacles.length}`, 10, 10);
+    }
 
     // Render touch controls on mobile/tablet
     // if (this.isMobileDevice()) {
@@ -221,26 +262,6 @@ export class Game {
     // Display controls information
     this.renderControlsInfo();
   }
-
-  // private renderScrollingBackground(): void {
-  //   if (!this.backgroundImage) return;
-
-  //   // Calculate how many tiles we need to cover the screen
-  //   const bgWidth = this.backgroundImage.width;
-  //   const bgHeight = this.backgroundImage.height;
-
-  //   // FIXED: Invert the Y component for upward scrolling background
-  //   // We need to multiply by -0.8 instead of 0.8 for parallax effect
-  //   const bgOffsetY = -(this.worldY) % bgHeight;
-  //   const bgOffsetX = (this.worldX) % bgWidth;
-
-  //   // Draw the background with seamless tiling and correct direction for movement
-  //   for (let x = -bgWidth + bgOffsetX; x < this.p.width + bgWidth; x += bgWidth) {
-  //     for (let y = -bgHeight + bgOffsetY; y < this.p.height + bgHeight; y += bgHeight) {
-  //       this.p.image(this.backgroundImage, x, y);
-  //     }
-  //   }
-  // }
 
   private renderTouchControls(): void {
     // Simple visualization of touch zones

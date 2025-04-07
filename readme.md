@@ -1,8 +1,7 @@
+# BUGS
+- the snowman needs a shadow
+
 # TODO
-- fix a depth map to the snowy background
-  - ✔️got the heightmap
-  - the values in the depth map should influence the height of the player, so that it looks like they are going up and down on the snowy parts
-  - if we are able, we can try to rotate the player character to match the slope of the snow, which would be super cool
 - fix the little face in the corner that can react to things happening in the game
   - need to generate the faces
     - idle
@@ -11,12 +10,12 @@
     - angry
     - surprised
     - scared
-- fix depth checks, so that we can render characters in front of the obstacles
+- ✔️fix depth checks, so that we can render characters in front of the obstacles
 - choose between silly characters
   - image up to the left corner of the screen
     - should react to different things happening in the game
 - obstacles
-    - snowman
+    - ✔️snowman
     - other skiers
     - other things 
       - poop
@@ -27,6 +26,27 @@ It is for kids and can be silly and fun
 The game area should scroll itself and player controls the character to left and right
 Can also increase their speed by pressing down
 
+## IDEAS
+### Gameplay Mechanics
+Ski Jump Ramps: Allow players to perform jumps and tricks for bonus points
+Different Snow Types: Add ice patches (faster, less control) and deep powder (slower, more control)
+Weather Changes: Occasional snowstorms that reduce visibility
+Multiple Paths: Fork the ski run into easy/hard paths with different rewards
+### Progression & Variety
+Increasing Difficulty: Start with simple obstacles, gradually add more complex patterns
+Day/Night Cycles: Skiing at night requires lanterns or glowing obstacles
+Mountain Zones: Different themed areas (forest, village, mountain peak)
+### Interactive Elements
+#### Power-ups:
+Hot chocolate: Speed boost
+Helmet: Temporary protection from one collision
+Magnet: Attracts nearby collectibles
+#### Collectibles: Coins, stars, or silly items like lost mittens
+### Fun Additions
+Animal Friends: Birds that fly alongside or squirrels that cheer
+Secret Easter Eggs: Hidden paths or surprise characters
+Silly Physics: Exaggerated crash animations or bouncy snow piles
+Avalanche Chase Scenes: Occasional "run from the avalanche" segments
 
 
 ## Later
@@ -38,7 +58,7 @@ Can also increase their speed by pressing down
 ## Assets
 - ✔️character sprites
 - obstacle sprites
-  - snowman
+  - ✔️snowman
   - ✔️tree
   - ✔️rock
   - other skiers
