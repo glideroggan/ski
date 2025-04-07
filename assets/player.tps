@@ -94,7 +94,7 @@
         <key>algorithmSettings</key>
         <struct type="AlgorithmSettings">
             <key>algorithm</key>
-            <enum type="AlgorithmSettings::AlgorithmId">MaxRects</enum>
+            <enum type="AlgorithmSettings::AlgorithmId">Grid</enum>
             <key>freeSizeMode</key>
             <enum type="AlgorithmSettings::AlgorithmFreeSizeMode">Best</enum>
             <key>sizeConstraints</key>
@@ -128,7 +128,7 @@
         <key>outputFormat</key>
         <enum type="SettingsBase::OutputFormat">RGBA8888</enum>
         <key>alphaHandling</key>
-        <enum type="SettingsBase::AlphaHandling">ClearTransparentPixels</enum>
+        <enum type="SettingsBase::AlphaHandling">ReduceBorderArtifacts</enum>
         <key>contentProtection</key>
         <struct type="ContentProtection">
             <key>key</key>
@@ -167,9 +167,27 @@
         </struct>
         <key>individualSpriteSettings</key>
         <map type="IndividualSpriteSettingsMap">
-            <key type="filename">C:/Users/glide/Downloads/final ski/skiier/skiier down.png</key>
-            <key type="filename">C:/Users/glide/Downloads/final ski/skiier/skiier right down.png</key>
-            <key type="filename">C:/Users/glide/Downloads/final ski/skiier/skiier right.png</key>
+            <key type="filename">final ski/skiier/crash.png</key>
+            <key type="filename">final ski/skiier/right down crash 1.png</key>
+            <key type="filename">final ski/skiier/right down crash 2.png</key>
+            <key type="filename">final ski/skiier/skiier right down.png</key>
+            <key type="filename">final ski/skiier/skiier right.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>0.5</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>256,256,512,512</rect>
+                <key>scale9Paddings</key>
+                <rect>256,256,512,512</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
+            <key type="filename">final ski/skiier/down crash 1.png</key>
+            <key type="filename">final ski/skiier/skiier down.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
@@ -178,9 +196,9 @@
                 <key>scale9Enabled</key>
                 <false/>
                 <key>scale9Borders</key>
-                <rect>256,256,512,512</rect>
+                <rect>256,384,512,768</rect>
                 <key>scale9Paddings</key>
-                <rect>256,256,512,512</rect>
+                <rect>256,384,512,768</rect>
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
@@ -191,7 +209,7 @@
             <struct type="SpriteSheet">
                 <key>files</key>
                 <array>
-                    <filename>C:/Users/glide/Downloads/final ski/skiier</filename>
+                    <filename>final ski/skiier</filename>
                 </array>
             </struct>
         </map>

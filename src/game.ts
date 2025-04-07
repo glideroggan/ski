@@ -335,12 +335,25 @@ export class Game {
         }
       } else if (this.p.key === 'd' || this.p.key === 'D') {
         // Toggle debug mode
+        this.debug = !this.debug;
         this.player.toggleDebug();
         this.obstacleManager.toggleDebug();
         console.log("Debug mode toggled");
       } else if (this.p.key === ' ' || this.p.keyCode === 32) { // Space key
         // Toggle pause
         this.togglePause();
+      } else if (this.debug) {
+        // Debug mode controls
+        if (this.p.key === 'h' || this.p.key === 'H') {
+          // Toggle terrain height adjustment
+          this.player.toggleTerrainHeight();
+        } else if (this.p.key === 'r' || this.p.key === 'R') {
+          // Toggle terrain rotation adjustment
+          this.player.toggleTerrainRotation();
+        } else if (this.p.key === 'm' || this.p.key === 'M') {
+          // Toggle heightmap visualization
+          this.world.toggleDebugHeightmap();
+        }
       }
     };
   }
