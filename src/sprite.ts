@@ -69,4 +69,21 @@ export class Sprite {
   public getScale(): number {
     return this.scale;
   }
+
+  // Getter methods for SpriteAtlas to use
+  public getSrcX(): number {
+    return this.srcX;
+  }
+
+  public getSrcY(): number {
+    return this.srcY;
+  }
+
+  public getSrcWidth(): number {
+    return this.srcWidth;
+  }
+
+  public getSrcHeight(): number {
+    return this.srcHeight;
+  }
 }

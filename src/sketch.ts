@@ -62,6 +62,11 @@ const sketch = (p: p5) => {
     
     // Initialize game
     game = new Game(p);
+    
+    // Load all sprite atlases
+    game.loadAllAtlases().catch(err => {
+      console.error('Failed to load sprite atlases:', err);
+    });
   };
 
   p.draw = () => {

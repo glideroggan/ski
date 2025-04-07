@@ -1,5 +1,6 @@
 import p5 from 'p5';
 import { Sprite } from './sprite';
+import { SpriteAtlas } from './spriteAtlas';
 import { CollisionOffset, Obstacle, ObstacleManager } from './obstacleManager';
 import { Game, RenderableObject } from './game';
 import { Position } from './camera';
@@ -26,6 +27,7 @@ export class Player implements RenderableObject {
   private maxPlayerMovement: number = 4;
   private spriteSheet: p5.Image | null = null;
   private sprites: Map<PlayerState, Sprite> = new Map();
+  private spriteAtlas: SpriteAtlas | null = null;
   private currentState: PlayerState = PlayerState.DOWN;
   private assetsLoaded: boolean = false;
   private stateTransitionTimer: number = 0;
@@ -68,10 +70,29 @@ export class Player implements RenderableObject {
   };
 
   private loadAssets(): void {
+    // Create sprite atlas
+    this.spriteAtlas = new SpriteAtlas(this.p);
+    
+    // Load the TexturePacker atlas
+    this.spriteAtlas.loadAtlas('assets/player.json')
+      .then(() => {
+        console.log("Player sprite atlas loaded successfully");
+        this.setupSpritesFromAtlas();
+        this.assetsLoaded = true;
+      })
+      .catch(err => {
+        console.error("Failed to load player sprite atlas:", err);
+        // Fallback to manual sprite loading
+        this.loadSpriteSheetManually();
+      });
+  }
+  
+  private loadSpriteSheetManually(): void {
+    console.log("Falling back to manual spritesheet loading");
     this.p.loadImage('assets/player.png',
       (img: p5.Image) => {
         this.spriteSheet = img;
-        console.log("Player spritesheet loaded. Dimensions:", img.width, "x", img.height);
+        console.log("Player spritesheet loaded manually. Dimensions:", img.width, "x", img.height);
         this.setupSprites();
         this.assetsLoaded = true;
       },
@@ -81,6 +102,67 @@ export class Player implements RenderableObject {
     );
   }
 
+  private setupSpritesFromAtlas(): void {
+    if (!this.spriteAtlas || !this.spriteAtlas.isLoaded()) {
+      console.error("Cannot setup sprites: sprite atlas is not loaded");
+      return;
+    }
+    
+    try {
+      // Map TexturePacker frame names to player states
+      // We're mapping both with and without .png extension for flexibility
+      const spriteStateMapping = [
+        { state: PlayerState.CRASHED, name: "crash" },
+        { state: PlayerState.DOWN, name: "skiier down" },
+        { state: PlayerState.RIGHT_DOWN, name: "skiier right down" },
+        { state: PlayerState.RIGHT, name: "skiier right" },
+        // Use the same sprites for left states but with flip=true
+        { state: PlayerState.LEFT_DOWN, name: "skiier right down", flip: true },
+        { state: PlayerState.LEFT, name: "skiier right", flip: true },
+        // Alternative frames for animation
+        { state: PlayerState.DOWN, name: "skiier2 down" },
+        { state: PlayerState.RIGHT_DOWN, name: "skiier2 right down" },
+        { state: PlayerState.RIGHT, name: "skiier2 right" },
+        { state: PlayerState.LEFT_DOWN, name: "skiier2 right down", flip: true },
+        { state: PlayerState.LEFT, name: "skiier2 right", flip: true },
+        // Flying states
+        { state: PlayerState.FLYING_DOWN, name: "down crash 1" },
+        { state: PlayerState.FLYING_RIGHT_DOWN, name: "right down crash 1" },
+        { state: PlayerState.FLYING_RIGHT, name: "right down crash 2" },
+        { state: PlayerState.FLYING_LEFT_DOWN, name: "right down crash 1", flip: true },
+        { state: PlayerState.FLYING_LEFT, name: "right down crash 2", flip: true }
+      ];
+      
+      // Add sprites to the map
+      for (const mapping of spriteStateMapping) {
+        const sprite = this.spriteAtlas.getSprite(
+          mapping.name + ".png", // Try with extension first
+          mapping.flip || false,
+          1.0
+        );
+        
+        if (sprite) {
+          console.log(`Loaded sprite for state ${PlayerState[mapping.state]}: ${mapping.name}`);
+          console.log(`Sprite dimensions: ${sprite["srcWidth"]} x ${sprite["srcHeight"]}`);
+          this.sprites.set(mapping.state, sprite);
+        } else {
+          console.warn(`Sprite not found for state ${PlayerState[mapping.state]}, name: ${mapping.name}`);
+        }
+      }
+      
+      console.log(`Loaded ${this.sprites.size} sprites from atlas`);
+      
+      // Ensure we have at least basic sprites
+      if (this.sprites.size < 5) {
+        console.warn("Not enough sprites were loaded from atlas, falling back to manual setup");
+        this.loadSpriteSheetManually();
+      }
+    } catch (error) {
+      console.error("Error setting up sprites from atlas:", error);
+      this.loadSpriteSheetManually();
+    }
+  }
+
   private setupSprites(): void {
     if (!this.spriteSheet || this.spriteSheet.width === 0 || this.spriteSheet.height === 0) {
       console.error("Cannot setup player sprites: spritesheet is invalid");
@@ -88,9 +170,14 @@ export class Player implements RenderableObject {
     }
 
     try {
-      // Assuming the spritesheet is a 2x2 grid
+      // Assuming the spritesheet is a 4x3 grid
+      /*
+      CRASHED           FLYING_DOWN       FLYING_RIGHT_DOWN   FLYING_RIGHT
+      SKIER1_DOWN       SKIER1_DOWN_RIGHT SKIER1_RIGHT        SKIER2_DOWN
+      SKIER2_DOWN_RIGHT SKIER2_RIGHT 
+      */
       const frameWidth = this.spriteSheet.width / 4;
-      const frameHeight = this.spriteSheet.height / 2;
+      const frameHeight = this.spriteSheet.height / 3;
 
       // Map frames to player states
       this.sprites.set(PlayerState.DOWN,
@@ -110,16 +197,16 @@ export class Player implements RenderableObject {
 
       // Flying states use the same sprite with slight rotation
       this.sprites.set(PlayerState.FLYING_DOWN,
-        new Sprite(this.p, this.spriteSheet, frameWidth * 3, 0, frameWidth, frameHeight));
+        new Sprite(this.p, this.spriteSheet, frameWidth, 0, frameWidth, frameHeight));
 
       this.sprites.set(PlayerState.FLYING_RIGHT_DOWN,
-        new Sprite(this.p, this.spriteSheet, frameWidth * 3, 0, frameWidth, frameHeight));
+        new Sprite(this.p, this.spriteSheet, frameWidth * 2, 0, frameWidth, frameHeight));
 
       this.sprites.set(PlayerState.FLYING_RIGHT,
         new Sprite(this.p, this.spriteSheet, frameWidth * 3, 0, frameWidth, frameHeight));
 
       this.sprites.set(PlayerState.FLYING_LEFT_DOWN,
-        new Sprite(this.p, this.spriteSheet, frameWidth * 3, 0, frameWidth, frameHeight, true));
+        new Sprite(this.p, this.spriteSheet, frameWidth * 2, 0, frameWidth, frameHeight, true));
 
       this.sprites.set(PlayerState.FLYING_LEFT,
         new Sprite(this.p, this.spriteSheet, frameWidth * 3, 0, frameWidth, frameHeight, true));
@@ -291,6 +378,7 @@ export class Player implements RenderableObject {
     const sprite = this.sprites.get(this.currentState);
     if (!sprite) {
       // Skip rendering if sprite isn't available
+      console.warn(`Sprite not found for state ${PlayerState[this.currentState]}`);
       return;
     }
 

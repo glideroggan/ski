@@ -7,6 +7,7 @@ import { Camera } from './camera';
 import { World } from './world';
 import { CollisionHandler } from './collisionHandler';
 import { Position } from './camera';
+import { SpriteAtlas } from './spriteAtlas';
 
 // Interface for objects that can be rendered with depth sorting
 export interface RenderableObject {
@@ -58,6 +59,7 @@ export class Game {
   camera: Camera;
   world: World;
   private collisionHandler: CollisionHandler;
+  spriteAtlases: Map<string, SpriteAtlas> = new Map();
 
   constructor(p: p5) {
     this.p = p;
@@ -447,6 +449,52 @@ export class Game {
     // You may need to adjust other game elements based on the new size
     // For example, repositioning UI elements, adjusting view distances, etc.
     console.log(`Canvas resized to ${newWidth}x${newHeight}`);
+  }
+
+  // Load a sprite atlas and store it with the given name
+  public loadSpriteAtlas(name: string, jsonPath: string, imagePath?: string): Promise<SpriteAtlas> {
+    return new Promise((resolve, reject) => {
+      // Check if atlas with this name already exists
+      if (this.spriteAtlases.has(name)) {
+        console.log(`Sprite atlas '${name}' already loaded, returning existing instance`);
+        resolve(this.spriteAtlases.get(name)!);
+        return;
+      }
+      
+      // Create new atlas
+      const atlas = new SpriteAtlas(this.p);
+      
+      // Load the atlas data
+      atlas.loadAtlas(jsonPath, imagePath)
+        .then(() => {
+          // Store in the map
+          this.spriteAtlases.set(name, atlas);
+          console.log(`Sprite atlas '${name}' loaded successfully`);
+          resolve(atlas);
+        })
+        .catch(err => {
+          console.error(`Failed to load sprite atlas '${name}':`, err);
+          reject(err);
+        });
+    });
+  }
+  
+  // Get a sprite atlas by name
+  public getSpriteAtlas(name: string): SpriteAtlas | null {
+    return this.spriteAtlases.get(name) || null;
+  }
+  
+  // Preload all common atlases
+  public loadAllAtlases(): Promise<void> {
+    const promises: Promise<SpriteAtlas>[] = [
+      this.loadSpriteAtlas('player', 'assets/player.json')
+      // Add more atlases here as needed:
+      // this.loadSpriteAtlas('obstacles', 'assets/obstacles.json')
+    ];
+    
+    return Promise.all(promises).then(() => {
+      console.log('All sprite atlases loaded successfully');
+    });
   }
 }
 
