@@ -36,4 +36,17 @@ export class Camera {
             this.worldPos.y += this.p.height / 4 - this.game.player.height / 2;
         }
     }
+    
+    // Handle viewport resize
+    handleResize(newWidth: number, newHeight: number): void {
+        // Update any camera-specific calculations that depend on screen dimensions
+        // This is important for worldToScreen and screenToWorld conversions
+        
+        // If camera was centered on something before resize, you might need to
+        // readjust its position to maintain the same world-to-screen relationship
+        if (this.game.player) {
+            // Recalculate camera position based on new dimensions
+            this.update();
+        }
+    }
 }

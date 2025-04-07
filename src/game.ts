@@ -12,6 +12,8 @@ import { Position } from './camera';
 export interface RenderableObject {
   worldPos: Position;
   render(p: p5, game: Game): void;
+  // Optional height property for depth sorting
+  height?: number;
 }
 
 export enum GameState {
@@ -227,8 +229,16 @@ export class Game {
       renderableObjects.push(obstacle);
     });
     
-    // Sort objects by Y position (smaller Y values first = further away)
-    renderableObjects.sort((a, b) => a.worldPos.y - b.worldPos.y);
+    // Sort objects by their ground position (base Y position) rather than center
+    renderableObjects.sort((a, b) => {
+      // Calculate base positions for both objects
+      // For objects without height property, default to using their center position
+      const aBaseY = a.worldPos.y + (a.height ? a.height/2 : 0);
+      const bBaseY = b.worldPos.y + (b.height ? b.height/2 : 0);
+      
+      // Sort by base Y position (smaller Y values first = further away)
+      return aBaseY - bBaseY;
+    });
     
     // Render objects in Y-order
     for (const object of renderableObjects) {
@@ -425,6 +435,18 @@ export class Game {
       this.p.loop();
       console.log("Game resumed");
     }
+  }
+
+  // Handle canvas resize
+  public handleResize(newWidth: number, newHeight: number): void {
+    // Update any game elements that depend on canvas size
+    if (this.camera) {
+      this.camera.handleResize(newWidth, newHeight);
+    }
+    
+    // You may need to adjust other game elements based on the new size
+    // For example, repositioning UI elements, adjusting view distances, etc.
+    console.log(`Canvas resized to ${newWidth}x${newHeight}`);
   }
 }
 

@@ -172,6 +172,9 @@
             <key type="filename">final ski/skiier/right down crash 2.png</key>
             <key type="filename">final ski/skiier/skiier right down.png</key>
             <key type="filename">final ski/skiier/skiier right.png</key>
+            <key type="filename">final ski/skiier/skiier2 down.png</key>
+            <key type="filename">final ski/skiier/skiier2 right down.png</key>
+            <key type="filename">final ski/skiier/skiier2 right.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
