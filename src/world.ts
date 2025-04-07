@@ -24,7 +24,7 @@ export class World {
             (img: p5.Image) => {
                 this.heightmap = img;
                 this.heightmapLoaded = true;
-                console.log("Heightmap loaded. Dimensions:", img.width, "x", img.height);
+                console.debug("Heightmap loaded. Dimensions:", img.width, "x", img.height);
             },
             (err) => {
                 console.error('Failed to load heightmap:', err);

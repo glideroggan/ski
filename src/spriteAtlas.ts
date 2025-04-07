@@ -62,17 +62,18 @@ export class SpriteAtlas {
         })
         .then((atlasData: TexturePackerAtlas) => {
           this.atlasData = atlasData;
-          console.log(`Atlas loaded: ${jsonPath}`);
+          console.debug(`Atlas loaded: ${jsonPath}`);
           
           // Determine image path from meta data if not provided
           const actualImagePath = imagePath || atlasData.meta.image;
+          console.debug(`Image path determined: ${actualImagePath}`);
           
           // Load the spritesheet image
           this.p.loadImage(
             actualImagePath,
             (img: p5.Image) => {
               this.spriteSheet = img;
-              console.log(`Spritesheet loaded: ${actualImagePath}, dimensions: ${img.width}x${img.height}`);
+              console.debug(`Spritesheet loaded: ${actualImagePath}, dimensions: ${img.width}x${img.height}`);
               this.processAtlas();
               this.loaded = true;
               resolve();
@@ -115,10 +116,10 @@ export class SpriteAtlas {
         }
       }
       
-      console.log(`Processed ${this.sprites.size} sprites from atlas`);
+      console.debug(`Processed ${this.sprites.size} sprites from atlas`);
       
       // Log all sprite names for debugging
-      console.log("Available sprites:", Array.from(this.sprites.keys()));
+      console.debug("Available sprites:", Array.from(this.sprites.keys()));
     } catch (error) {
       console.error("Error processing atlas:", error);
     }
@@ -145,7 +146,7 @@ export class SpriteAtlas {
     this.sprites.set(nameWithoutExtension, sprite);
     
     // Log for debugging
-    console.log(`Added sprite: ${frame.filename}, position: ${x},${y}, size: ${w}x${h}`);
+    console.debug(`Added sprite: ${frame.filename}, position: ${x},${y}, size: ${w}x${h}`);
   }
 
   public getSprite(name: string, flip: boolean = false, scale: number = 1.0): Sprite | null {

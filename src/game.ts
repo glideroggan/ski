@@ -1,4 +1,4 @@
-import { Player, PlayerState } from './player';
+import { Player, PlayerState } from './player/player';
 import { ObstacleManager, Obstacle } from './obstacleManager';
 import { InputHandler } from './inputHandler';
 import p5 from 'p5';
@@ -78,12 +78,12 @@ export class Game {
     this.skiTrack = new SkiTrack(this);
     this.collisionHandler = new CollisionHandler(this);
 
-    console.log("Game initialized. Press 'D' to toggle debug mode");
+    console.debug("Game initialized. Press 'D' to toggle debug mode");
     this.setupKeyboardControls();
   }
 
   private loadAssets(): void {
-    console.log("Loading game assets...");
+    console.debug("Loading game assets...");
 
     let assetsToLoad = 2;
     let assetsLoaded = 0;
@@ -92,11 +92,11 @@ export class Game {
     this.p.loadImage('assets/snow.png',
       (img: p5.Image) => {
         this.backgroundImage = img;
-        console.log("Background image loaded:", img.width, "x", img.height);
+        console.debug("Background image loaded:", img.width, "x", img.height);
         assetsLoaded++;
         if (assetsLoaded === assetsToLoad) {
           this.assetsLoaded = true;
-          console.log("All assets loaded successfully");
+          console.debug("All assets loaded successfully");
         }
       },
       (err) => {
@@ -108,13 +108,13 @@ export class Game {
     // Load obstacle spritesheet
     this.p.loadImage('assets/obstacles.png',
       (img: p5.Image) => {
-        console.log("Obstacle spritesheet loaded:", img.width, "x", img.height);
+        console.debug("Obstacle spritesheet loaded:", img.width, "x", img.height);
         this.spriteSheet = img; // Save reference to obstacle spritesheet
         this.obstacleManager.setSpriteSheet(img);
         assetsLoaded++;
         if (assetsLoaded === assetsToLoad) {
           this.assetsLoaded = true;
-          console.log("All assets loaded successfully");
+          console.debug("All assets loaded successfully");
         }
       },
       (err) => {
@@ -199,7 +199,7 @@ export class Game {
     this.debug = !this.debug;
     this.obstacleManager.toggleDebug();
     this.player.toggleDebug();
-    console.log(`Debug mode: ${this.debug ? 'ON' : 'OFF'}`);
+    console.debug(`Debug mode: ${this.debug ? 'ON' : 'OFF'}`);
   }
 
   public render(): void {
@@ -372,7 +372,7 @@ export class Game {
         this.debug = !this.debug;
         this.player.toggleDebug();
         this.obstacleManager.toggleDebug();
-        console.log("Debug mode toggled");
+        console.debug("Debug mode toggled");
       } else if (this.p.key === ' ' || this.p.keyCode === 32) { // Space key
         // Toggle pause
         this.togglePause();
@@ -397,7 +397,7 @@ export class Game {
     this.gameState = GameState.PLAYING;
     this.isPaused = false;
     this.p.loop(); // Ensure game is running
-    console.log("Game started");
+    console.debug("Game started");
   }
 
   // Reset game after game over
@@ -421,7 +421,7 @@ export class Game {
     this.backgroundX = 0;
 
     this.p.loop(); // Ensure game is running
-    console.log("Game reset");
+    console.debug("Game reset");
   }
 
   // Toggle pause state
@@ -430,12 +430,12 @@ export class Game {
       this.gameState = GameState.PAUSED;
       this.isPaused = true;
       this.p.noLoop();
-      console.log("Game paused");
+      console.debug("Game paused");
     } else if (this.gameState === GameState.PAUSED) {
       this.gameState = GameState.PLAYING;
       this.isPaused = false;
       this.p.loop();
-      console.log("Game resumed");
+      console.debug("Game resumed");
     }
   }
 
@@ -448,7 +448,7 @@ export class Game {
     
     // You may need to adjust other game elements based on the new size
     // For example, repositioning UI elements, adjusting view distances, etc.
-    console.log(`Canvas resized to ${newWidth}x${newHeight}`);
+    console.debug(`Canvas resized to ${newWidth}x${newHeight}`);
   }
 
   // Load a sprite atlas and store it with the given name
@@ -456,7 +456,7 @@ export class Game {
     return new Promise((resolve, reject) => {
       // Check if atlas with this name already exists
       if (this.spriteAtlases.has(name)) {
-        console.log(`Sprite atlas '${name}' already loaded, returning existing instance`);
+        console.debug(`Sprite atlas '${name}' already loaded, returning existing instance`);
         resolve(this.spriteAtlases.get(name)!);
         return;
       }
@@ -469,7 +469,7 @@ export class Game {
         .then(() => {
           // Store in the map
           this.spriteAtlases.set(name, atlas);
-          console.log(`Sprite atlas '${name}' loaded successfully`);
+          console.debug(`Sprite atlas '${name}' loaded successfully`);
           resolve(atlas);
         })
         .catch(err => {
@@ -487,13 +487,13 @@ export class Game {
   // Preload all common atlases
   public loadAllAtlases(): Promise<void> {
     const promises: Promise<SpriteAtlas>[] = [
-      this.loadSpriteAtlas('player', 'assets/player.json')
+      this.loadSpriteAtlas('player', 'assets/player.json', 'assets/player.png'),
       // Add more atlases here as needed:
       // this.loadSpriteAtlas('obstacles', 'assets/obstacles.json')
     ];
     
     return Promise.all(promises).then(() => {
-      console.log('All sprite atlases loaded successfully');
+      console.debug('All sprite atlases loaded successfully');
     });
   }
 }

@@ -1,9 +1,10 @@
 import p5 from 'p5';
-import { Sprite } from './sprite';
-import { SpriteAtlas } from './spriteAtlas';
-import { CollisionOffset, Obstacle, ObstacleManager } from './obstacleManager';
-import { Game, RenderableObject } from './game';
-import { Position } from './camera';
+import { Sprite } from '../sprite';
+import { SpriteAtlas } from '../spriteAtlas';
+import { CollisionOffset, Obstacle, ObstacleManager } from '../obstacleManager';
+import { Game, RenderableObject } from '../game';
+import { Position } from '../camera';
+import { PlayerRenderer } from './player.rendering';
 
 export enum PlayerState {
   DOWN,
@@ -19,33 +20,56 @@ export enum PlayerState {
   CRASHED
 }
 
+// Interface for data needed by PlayerRenderer
+export interface PlayerRenderData {
+  p: p5;
+  assetsLoaded: boolean;
+  spriteSheet: p5.Image | null;
+  sprites: Map<PlayerState, Sprite>;
+  currentState: PlayerState;
+  game: Game;
+  worldPos: Position;
+  width: number;
+  height: number;
+  useTerrainHeight: boolean;
+  currentVisualHeight: number;
+  useTerrainRotation: boolean;
+  currentRotation: number;
+  terrainRotationFactor: number;
+  collisionEffect: number;
+  debug: boolean;
+  isFlying(): boolean;
+  isCrashed(): boolean;
+  getCollisionHitbox(): { position: Position, width: number, height: number };
+}
+
 export class Player implements RenderableObject {
-  private p: p5;
+  protected p: p5;
   width: number = 50;
   height: number = 80;
 
   private maxPlayerMovement: number = 4;
-  private spriteSheet: p5.Image | null = null;
-  private sprites: Map<PlayerState, Sprite> = new Map();
-  private spriteAtlas: SpriteAtlas | null = null;
-  private currentState: PlayerState = PlayerState.DOWN;
-  private assetsLoaded: boolean = false;
+  protected spriteSheet: p5.Image | null = null;
+  protected sprites: Map<PlayerState, Sprite> = new Map();
+  protected spriteAtlas: SpriteAtlas | null = null;
+  protected currentState: PlayerState = PlayerState.DOWN;
+  protected assetsLoaded: boolean = false;
   private stateTransitionTimer: number = 0;
   private stateTransitionDelay: number = 10; // Frames to wait before allowing another state change
-  private collisionEffect: number = 0; // For visual collision feedback
-  private debug: boolean = false; // Debug mode
+  protected collisionEffect: number = 0; // For visual collision feedback
+  protected debug: boolean = false; // Debug mode
   game: Game;
   worldPos: Position;
 
   // Heightmap adjustment properties
   terrainHeightFactor: number = 45; // How much to adjust player height based on terrain (reduced from 20)
-  private terrainRotationFactor: number = 0.02; // Reduced rotation factor for more subtle effect
-  private useTerrainHeight: boolean = true; // Toggle for terrain height adjustment
-  private useTerrainRotation: boolean = true; // Toggle for terrain rotation adjustment
+  protected terrainRotationFactor: number = 0.02; // Reduced rotation factor for more subtle effect
+  protected useTerrainHeight: boolean = true; // Toggle for terrain height adjustment
+  protected useTerrainRotation: boolean = true; // Toggle for terrain rotation adjustment
 
   // For smoother visual transitions - reduced smoothing for more responsive movement
-  currentVisualHeight: number = 0;
-  private currentRotation: number = 0;
+  protected currentVisualHeight: number = 0;
+  protected currentRotation: number = 0;
   private heightSmoothingFactor: number = 0.15; // Reduced from 0.2 for more responsive movement
 
   private collisionCount: number = 0;
@@ -53,11 +77,15 @@ export class Player implements RenderableObject {
   private readonly flyingDuration: number = 60; // Flying state lasts for 60 frames (1 second at 60fps)
   private crashRecoveryTimer: number = 0;
   private readonly crashRecoveryDuration: number = 180; // 3 seconds to recover from crash
+  
+  // Add a reference to the renderer
+  private renderer: PlayerRenderer;
 
   constructor(p: p5, pos: Position, game: Game) {
     this.p = p;
     this.game = game;
     this.worldPos = pos;
+    this.renderer = new PlayerRenderer(this.getRenderData());
     this.loadAssets();
   }
 
@@ -69,38 +97,65 @@ export class Player implements RenderableObject {
     heightFactor: 0.15, // Focus on upper part of player for collision
   };
 
+  // Provide all render data through a single method
+  public getRenderData(): PlayerRenderData {
+    return {
+      p: this.p,
+      assetsLoaded: this.assetsLoaded,
+      spriteSheet: this.spriteSheet,
+      sprites: this.sprites,
+      currentState: this.currentState,
+      game: this.game,
+      worldPos: this.worldPos,
+      width: this.width,
+      height: this.height,
+      useTerrainHeight: this.useTerrainHeight,
+      currentVisualHeight: this.currentVisualHeight,
+      useTerrainRotation: this.useTerrainRotation,
+      currentRotation: this.currentRotation,
+      terrainRotationFactor: this.terrainRotationFactor,
+      collisionEffect: this.collisionEffect,
+      debug: this.debug,
+      isFlying: () => this.isFlying(),
+      isCrashed: () => this.isCrashed(),
+      getCollisionHitbox: () => this.getCollisionHitbox()
+    };
+  }
+
   private loadAssets(): void {
     // Create sprite atlas
     this.spriteAtlas = new SpriteAtlas(this.p);
     
     // Load the TexturePacker atlas
-    this.spriteAtlas.loadAtlas('assets/player.json')
+    this.spriteAtlas.loadAtlas('assets/player.json', 'assets/player.png')
       .then(() => {
-        console.log("Player sprite atlas loaded successfully");
+        console.debug("Player sprite atlas loaded successfully");
         this.setupSpritesFromAtlas();
         this.assetsLoaded = true;
+        this.renderer.updateRenderData(this.getRenderData()); // Update renderer with loaded assets
       })
       .catch(err => {
         console.error("Failed to load player sprite atlas:", err);
         // Fallback to manual sprite loading
-        this.loadSpriteSheetManually();
+        // this.loadSpriteSheetManually();
       });
   }
   
-  private loadSpriteSheetManually(): void {
-    console.log("Falling back to manual spritesheet loading");
-    this.p.loadImage('assets/player.png',
-      (img: p5.Image) => {
-        this.spriteSheet = img;
-        console.log("Player spritesheet loaded manually. Dimensions:", img.width, "x", img.height);
-        this.setupSprites();
-        this.assetsLoaded = true;
-      },
-      (err) => {
-        console.error('Failed to load player.png:', err);
-      }
-    );
-  }
+
+  // private loadSpriteSheetManually(): void {
+  //   console.debug("Falling back to manual spritesheet loading");
+  //   this.p.loadImage('assets/player.png',
+  //     (img: p5.Image) => {
+  //       this.spriteSheet = img;
+  //       console.debug("Player spritesheet loaded manually. Dimensions:", img.width, "x", img.height);
+  //       this.setupSprites();
+  //       this.assetsLoaded = true;
+  //     },
+  //     (err) => {
+  //       console.error('Failed to load player.png:', err);
+  //     }
+  //   );
+  // }
 
   private setupSpritesFromAtlas(): void {
     if (!this.spriteAtlas || !this.spriteAtlas.isLoaded()) {
@@ -113,6 +168,7 @@ export class Player implements RenderableObject {
       // We're mapping both with and without .png extension for flexibility
       const spriteStateMapping = [
         { state: PlayerState.CRASHED, name: "crash" },
+
         { state: PlayerState.DOWN, name: "skiier down" },
         { state: PlayerState.RIGHT_DOWN, name: "skiier right down" },
         { state: PlayerState.RIGHT, name: "skiier right" },
@@ -120,11 +176,13 @@ export class Player implements RenderableObject {
         { state: PlayerState.LEFT_DOWN, name: "skiier right down", flip: true },
         { state: PlayerState.LEFT, name: "skiier right", flip: true },
         // Alternative frames for animation
-        { state: PlayerState.DOWN, name: "skiier2 down" },
-        { state: PlayerState.RIGHT_DOWN, name: "skiier2 right down" },
-        { state: PlayerState.RIGHT, name: "skiier2 right" },
-        { state: PlayerState.LEFT_DOWN, name: "skiier2 right down", flip: true },
-        { state: PlayerState.LEFT, name: "skiier2 right", flip: true },
+        // NOTE: don't enable these yet, as I think we need separate states, and should supply the name of the skiier we want to use
+        // so that we can have multiple skiier types
+        // { state: PlayerState.DOWN, name: "skiier2 down" },
+        // { state: PlayerState.RIGHT_DOWN, name: "skiier2 right down" },
+        // { state: PlayerState.RIGHT, name: "skiier2 right" },
+        // { state: PlayerState.LEFT_DOWN, name: "skiier2 right down", flip: true },
+        // { state: PlayerState.LEFT, name: "skiier2 right", flip: true },
         // Flying states
         { state: PlayerState.FLYING_DOWN, name: "down crash 1" },
         { state: PlayerState.FLYING_RIGHT_DOWN, name: "right down crash 1" },
@@ -142,24 +200,24 @@ export class Player implements RenderableObject {
         );
         
         if (sprite) {
-          console.log(`Loaded sprite for state ${PlayerState[mapping.state]}: ${mapping.name}`);
-          console.log(`Sprite dimensions: ${sprite["srcWidth"]} x ${sprite["srcHeight"]}`);
+          console.debug(`Loaded sprite for state ${PlayerState[mapping.state]}: ${mapping.name}`);
+          console.debug(`Sprite dimensions: ${sprite["srcWidth"]} x ${sprite["srcHeight"]}`);
           this.sprites.set(mapping.state, sprite);
         } else {
           console.warn(`Sprite not found for state ${PlayerState[mapping.state]}, name: ${mapping.name}`);
         }
       }
       
-      console.log(`Loaded ${this.sprites.size} sprites from atlas`);
+      console.debug(`Loaded ${this.sprites.size} sprites from atlas`);
       
       // Ensure we have at least basic sprites
       if (this.sprites.size < 5) {
         console.warn("Not enough sprites were loaded from atlas, falling back to manual setup");
-        this.loadSpriteSheetManually();
+        // this.loadSpriteSheetManually();
       }
     } catch (error) {
       console.error("Error setting up sprites from atlas:", error);
-      this.loadSpriteSheetManually();
+      // this.loadSpriteSheetManually();
     }
   }
 
@@ -370,104 +428,21 @@ export class Player implements RenderableObject {
   }
 
   public render(): void {
-    if (!this.assetsLoaded || !this.spriteSheet || this.sprites.size === 0) {
-      // Don't render anything if assets aren't loaded
-      return;
-    }
-
-    const sprite = this.sprites.get(this.currentState);
-    if (!sprite) {
-      // Skip rendering if sprite isn't available
-      console.warn(`Sprite not found for state ${PlayerState[this.currentState]}`);
-      return;
-    }
-
-    // Apply visual effect if collision is active
-    if (this.collisionEffect > 0) {
-      this.p.push();
-      if (this.collisionEffect % 4 < 2) { // Flashing effect
-        this.p.tint(255, 100, 100); // Red tint
-      }
-      // Add slight random offset for shake effect
-      const shakeAmount = this.collisionEffect / 5;
-      this.p.translate(
-        this.p.random(-shakeAmount, shakeAmount),
-        this.p.random(-shakeAmount, shakeAmount)
-      );
-    }
-
-    // Get screen position from world position using camera transformation
-    const screenPos = this.game.camera.worldToScreen(this.worldPos);
-
-    // Center the sprite on the player's position
-    let x = screenPos.x;
-    let y = screenPos.y;
-
-    // Apply terrain height adjustment using pre-calculated smooth height
-    if (this.useTerrainHeight) {
-      y -= this.currentVisualHeight;
-    }
-
-    this.p.push(); // Save current transformation state
-
-    // Apply terrain-based rotation using pre-calculated smooth rotation
-    if (this.useTerrainRotation && !this.isFlying() && !this.isCrashed()) {
-      // Apply rotation based on pre-calculated smooth rotation
-      // Translate to player position, rotate, then translate back
-      this.p.translate(x, y);
-      this.p.rotate(this.currentRotation);
-      this.p.translate(-x, -y);
-    }
-
-    // Render the sprite
-    sprite.render(x, y, this.width, this.height);
-
-    this.p.pop(); // Restore transformation state
-
-    if (this.collisionEffect > 0) {
-      this.p.pop(); // Restore drawing state (for collision effect)
-    }
-
-    // Render debug hitbox if debug mode is enabled
-    this.renderDebugHitbox();
-
-    // Debug visualization for terrain height adjustment
-    if (this.debug) {
-      const terrainHeight = this.game.world.getHeightAtPosition(this.worldPos);
-      const slope = this.game.world.getSlopeAtPosition(this.worldPos);
-
-      // Draw a line showing the height adjustment
-      this.p.stroke(0, 255, 0);
-      this.p.line(x, y, x, screenPos.y);
-
-      // Draw a line showing slope direction
-      this.p.stroke(255, 0, 0);
-      const slopeLength = 20;
-      this.p.line(
-        x,
-        y,
-        x + Math.cos(this.currentRotation / this.terrainRotationFactor) * slopeLength,
-        y + Math.sin(this.currentRotation / this.terrainRotationFactor) * slopeLength
-      );
-
-      // Display smoothed height value
-      this.p.fill(255, 255, 0);
-      this.p.noStroke();
-      this.p.text(`Visual Height: ${this.currentVisualHeight.toFixed(2)}`, 10, 210);
-      this.p.text(`Visual Rotation: ${(this.currentRotation * 180 / Math.PI).toFixed(2)}°`, 10, 230);
-    }
+    // Refresh render data before rendering
+    this.renderer.updateRenderData(this.getRenderData());
+    this.renderer.render();
   }
 
   // Toggle terrain height adjustment
   public toggleTerrainHeight(): void {
     this.useTerrainHeight = !this.useTerrainHeight;
-    console.log(`Terrain height adjustment: ${this.useTerrainHeight ? 'ON' : 'OFF'}`);
+    console.debug(`Terrain height adjustment: ${this.useTerrainHeight ? 'ON' : 'OFF'}`);
   }
 
   // Toggle terrain rotation adjustment
   public toggleTerrainRotation(): void {
     this.useTerrainRotation = !this.useTerrainRotation;
-    console.log(`Terrain rotation adjustment: ${this.useTerrainRotation ? 'ON' : 'OFF'}`);
+    console.debug(`Terrain rotation adjustment: ${this.useTerrainRotation ? 'ON' : 'OFF'}`);
   }
 
   public turnRight(): boolean {
@@ -538,11 +513,11 @@ export class Player implements RenderableObject {
     // Set collision effect for visual feedback
     this.collisionEffect = 30;
 
-    console.log('Player collided with obstacle:', obstacle.type);
+    console.debug('Player collided with obstacle:', obstacle.type);
 
     // Increment collision count
     this.collisionCount++;
-    console.log(`Collision count: ${this.collisionCount}`);
+    console.debug(`Collision count: ${this.collisionCount}`);
 
     // Different effects based on collision count and obstacle type
     if (this.collisionCount >= 4) {
@@ -597,7 +572,7 @@ export class Player implements RenderableObject {
     // Apply special flying effect
     this.collisionEffect = this.flyingDuration;
 
-    console.log(`Player is now flying! Current state: ${PlayerState[this.currentState]}`);
+    console.debug(`Player is now flying! Current state: ${PlayerState[this.currentState]}`);
   }
 
   /**
@@ -606,7 +581,7 @@ export class Player implements RenderableObject {
   private transitionToCrashed(): void {
     this.currentState = PlayerState.CRASHED;
     this.crashRecoveryTimer = this.crashRecoveryDuration;
-    console.log("Player has crashed!");
+    console.debug("Player has crashed!");
   }
 
   /**
@@ -615,7 +590,7 @@ export class Player implements RenderableObject {
   private resetAfterCrash(): void {
     this.currentState = PlayerState.DOWN;
     this.collisionCount = 0;
-    console.log("Player recovered from crash");
+    console.debug("Player recovered from crash");
   }
 
   /**

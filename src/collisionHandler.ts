@@ -1,6 +1,6 @@
 import { Game } from "./game";
 import { Obstacle, ObstacleManager } from "./obstacleManager";
-import { Player } from "./player";
+import { Player } from "./player/player";
 import { Position } from "./camera";
 
 export class CollisionHandler {
@@ -30,7 +30,7 @@ export class CollisionHandler {
                 
                 // For debugging
                 if (this.game.debug) {
-                    console.log(`Collision detected with ${obstacle.type} at world position (${Math.round(obstacle.worldPos.x)}, ${Math.round(obstacle.worldPos.y)})`);
+                    console.debug(`Collision detected with ${obstacle.type} at world position (${Math.round(obstacle.worldPos.x)}, ${Math.round(obstacle.worldPos.y)})`);
                 }
                 
                 // Only handle one collision at a time

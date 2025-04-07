@@ -1,6 +1,6 @@
 import p5 from 'p5';
 import { Sprite } from './sprite';
-import { Player } from './player';
+import { Player } from './player/player';
 import { Game, RenderableObject } from './game';
 import { Position } from './camera';
 
@@ -176,7 +176,7 @@ export class ObstacleManager {
     this.obstacles.push(obstacle);
     
     if (this.debug) {
-      console.log(`Spawned ${type} at world (${Math.round(worldPos.x)}, ${Math.round(worldPos.y)})`);
+      console.debug(`Spawned ${type} at world (${Math.round(worldPos.x)}, ${Math.round(worldPos.y)})`);
     }
   }
   
@@ -286,7 +286,7 @@ export class ObstacleManager {
         adjustedPlayerY - adjustedPlayerHeight/2 < adjustedObstacleY + adjustedObstacleHeight/2
       ) {
         if (this.debug) {
-          console.log(`Collision detected with ${obstacle.type} at (${obstaclePos.x}, ${obstaclePos.y})`);
+          console.debug(`Collision detected with ${obstacle.type} at (${obstaclePos.x}, ${obstaclePos.y})`);
         }
         return obstacle;
       }
@@ -301,6 +301,6 @@ export class ObstacleManager {
   
   public toggleDebug(): void {
     this.debug = !this.debug;
-    console.log(`Debug mode: ${this.debug ? 'ON' : 'OFF'}`);
+    console.debug(`Debug mode: ${this.debug ? 'ON' : 'OFF'}`);
   }
 }
