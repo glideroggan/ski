@@ -26,11 +26,23 @@ It is for kids and can be silly and fun
 The game area should scroll itself and player controls the character to left and right
 Can also increase their speed by pressing down
 
+# To implement
+## Weather Changes: Occasional snowstorms that reduce visibility
+### Visual Effects
+- Progressive Visibility Reduction: A semi-transparent white gradient overlay that gets more opaque toward the bottom of the screen
+- Particle System: Varying densities of snowflakes based on storm intensity
+- Screen Shake: Subtle camera shake during intense blizzard conditions
+### Gameplay Mechanics
+- Visibility Range: During storms, obstacles would only become visible when closer to the player
+- Weather Progression:
+  - Clear conditions → Light snow → Heavy snow → Blizzard
+- Weather could change gradually or suddenly (surprise blizzards!)
+Difficulty Scaling: Weather could change more frequently as the game progresses, increasing the challenge
+
 ## IDEAS
 ### Gameplay Mechanics
 Ski Jump Ramps: Allow players to perform jumps and tricks for bonus points
 Different Snow Types: Add ice patches (faster, less control) and deep powder (slower, more control)
-Weather Changes: Occasional snowstorms that reduce visibility
 Multiple Paths: Fork the ski run into easy/hard paths with different rewards
 ### Progression & Variety
 Increasing Difficulty: Start with simple obstacles, gradually add more complex patterns
