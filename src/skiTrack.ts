@@ -1,7 +1,5 @@
 import p5 from "p5";
 import { Game } from "./game";
-import { Player } from "./player";
-import { PlayerState } from "./player";
 
 export class SkiTrack {
     points: { x: number, y: number, alpha: number }[] = [];

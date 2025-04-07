@@ -33,10 +33,9 @@ export class Game {
   backgroundImage: p5.Image | null = null;
   private spriteSheet: p5.Image | null = null; // Add the missing spriteSheet property
 
-  private readonly baseScrollSpeed: number = 5;
   private assetsLoaded: boolean = false;
   private assetsLoadingFailed: boolean = false;
-  private skiTrack: SkiTrack; // Add SkiTrack instance
+  skiTrack: SkiTrack; 
 
   // For handling key press events
   private leftKeyPressed: boolean = false;
@@ -124,6 +123,8 @@ export class Game {
 
     // Update player entity
     this.player.update();
+
+    
     
     // Update camera to follow player
     this.camera.update();
@@ -206,7 +207,7 @@ export class Game {
     this.world.render()
 
     // Render ski tracks BEFORE player and obstacles so they appear underneath
-    // this.skiTrack.render(this.p);
+    this.skiTrack.render(this.p);
 
     // Render game entities
     this.obstacleManager.render();

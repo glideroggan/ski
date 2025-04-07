@@ -23,7 +23,7 @@ export class Player {
   width: number = 50;
   height: number = 80;
 
-  private maxPlayerMovement: number = 3;
+  private maxPlayerMovement: number = 4;
   private spriteSheet: p5.Image | null = null;
   private sprites: Map<PlayerState, Sprite> = new Map();
   private currentState: PlayerState = PlayerState.DOWN;
@@ -40,9 +40,9 @@ export class Player {
   private terrainRotationFactor: number = 0.02; // Reduced rotation factor for more subtle effect
   private useTerrainHeight: boolean = true; // Toggle for terrain height adjustment
   private useTerrainRotation: boolean = true; // Toggle for terrain rotation adjustment
-  
+
   // For smoother visual transitions - reduced smoothing for more responsive movement
-  private currentVisualHeight: number = 0;
+  currentVisualHeight: number = 0;
   private currentRotation: number = 0;
   private heightSmoothingFactor: number = 0.15; // Reduced from 0.2 for more responsive movement
 
@@ -111,16 +111,16 @@ export class Player {
       // Flying states use the same sprite with slight rotation
       this.sprites.set(PlayerState.FLYING_DOWN,
         new Sprite(this.p, this.spriteSheet, frameWidth * 3, 0, frameWidth, frameHeight));
-        
+
       this.sprites.set(PlayerState.FLYING_RIGHT_DOWN,
         new Sprite(this.p, this.spriteSheet, frameWidth * 3, 0, frameWidth, frameHeight));
-        
+
       this.sprites.set(PlayerState.FLYING_RIGHT,
         new Sprite(this.p, this.spriteSheet, frameWidth * 3, 0, frameWidth, frameHeight));
-        
+
       this.sprites.set(PlayerState.FLYING_LEFT_DOWN,
         new Sprite(this.p, this.spriteSheet, frameWidth * 3, 0, frameWidth, frameHeight, true));
-        
+
       this.sprites.set(PlayerState.FLYING_LEFT,
         new Sprite(this.p, this.spriteSheet, frameWidth * 3, 0, frameWidth, frameHeight, true));
 
@@ -137,17 +137,17 @@ export class Player {
     // Update flying timer
     if (this.isFlying() && this.flyingTimer > 0) {
       this.flyingTimer--;
-      
+
       // When flying timer ends, transition to crashed state
       if (this.flyingTimer === 0) {
         this.transitionToCrashed();
       }
     }
-    
+
     // Update crash recovery timer
     if (this.isCrashed() && this.crashRecoveryTimer > 0) {
       this.crashRecoveryTimer--;
-      
+
       // When recovery timer ends, reset to regular state
       if (this.crashRecoveryTimer === 0) {
         this.resetAfterCrash();
@@ -159,7 +159,7 @@ export class Player {
       // Calculate movement speed (faster when flying)
       const speedMultiplier = this.isFlying() ? 2.0 : 1.0;
       const baseSpeed = this.maxPlayerMovement * speedMultiplier;
-      
+
       // Move based on current state
       switch (this.currentState) {
         case PlayerState.LEFT:
@@ -191,6 +191,14 @@ export class Player {
           // No movement when crashed
           break;
       }
+
+
+    }
+
+    if (this.currentState !== PlayerState.CRASHED && !this.isFlying()) {
+      const skiOffset = 30
+      const adjustedHeightPos = this.worldPos.y - this.currentVisualHeight + skiOffset;
+      this.game.skiTrack.addPoint(this.worldPos.x, adjustedHeightPos);
     }
 
     // Update state transition timer
@@ -202,22 +210,22 @@ export class Player {
     if (this.collisionEffect > 0) {
       this.collisionEffect--;
     }
-    
+
     // Pre-calculate terrain height for smoother transitions
     if (this.useTerrainHeight && this.game.world) {
       const terrainHeight = this.game.world.getHeightAtPosition(this.worldPos);
       // Gradually adjust current visual height toward target terrain height
-      this.currentVisualHeight = this.currentVisualHeight * (1 - this.heightSmoothingFactor) + 
-                               (terrainHeight * this.terrainHeightFactor) * this.heightSmoothingFactor;
+      this.currentVisualHeight = this.currentVisualHeight * (1 - this.heightSmoothingFactor) +
+        (terrainHeight * this.terrainHeightFactor) * this.heightSmoothingFactor;
     }
-    
+
     // Pre-calculate terrain rotation for smoother transitions
     if (this.useTerrainRotation && !this.isFlying() && !this.isCrashed() && this.game.world) {
       const slope = this.game.world.getSlopeAtPosition(this.worldPos);
       // Gradually adjust current rotation toward target slope angle
       const targetRotation = slope.angle * this.terrainRotationFactor;
-      this.currentRotation = this.currentRotation * (1 - this.heightSmoothingFactor) + 
-                           targetRotation * this.heightSmoothingFactor;
+      this.currentRotation = this.currentRotation * (1 - this.heightSmoothingFactor) +
+        targetRotation * this.heightSmoothingFactor;
     } else {
       // Gradually reset rotation to zero when not using terrain rotation
       this.currentRotation = this.currentRotation * (1 - this.heightSmoothingFactor);
@@ -340,21 +348,21 @@ export class Player {
     if (this.debug) {
       const terrainHeight = this.game.world.getHeightAtPosition(this.worldPos);
       const slope = this.game.world.getSlopeAtPosition(this.worldPos);
-      
+
       // Draw a line showing the height adjustment
       this.p.stroke(0, 255, 0);
       this.p.line(x, y, x, screenPos.y);
-      
+
       // Draw a line showing slope direction
       this.p.stroke(255, 0, 0);
       const slopeLength = 20;
       this.p.line(
-        x, 
-        y, 
-        x + Math.cos(this.currentRotation / this.terrainRotationFactor) * slopeLength, 
+        x,
+        y,
+        x + Math.cos(this.currentRotation / this.terrainRotationFactor) * slopeLength,
         y + Math.sin(this.currentRotation / this.terrainRotationFactor) * slopeLength
       );
-      
+
       // Display smoothed height value
       this.p.fill(255, 255, 0);
       this.p.noStroke();
@@ -442,13 +450,13 @@ export class Player {
   public handleCollision(obstacle: Obstacle): void {
     // Set collision effect for visual feedback
     this.collisionEffect = 30;
-    
+
     console.log('Player collided with obstacle:', obstacle.type);
-    
+
     // Increment collision count
     this.collisionCount++;
     console.log(`Collision count: ${this.collisionCount}`);
-    
+
     // Different effects based on collision count and obstacle type
     if (this.collisionCount >= 4) {
       // On fourth collision, transition to flying state
@@ -495,16 +503,16 @@ export class Player {
         // If already in a flying or crashed state, do nothing
         return;
     }
-    
+
     // Set flying timer
     this.flyingTimer = this.flyingDuration;
-    
+
     // Apply special flying effect
     this.collisionEffect = this.flyingDuration;
-    
+
     console.log(`Player is now flying! Current state: ${PlayerState[this.currentState]}`);
   }
-  
+
   /**
    * Transitions the player to crashed state
    */
@@ -513,7 +521,7 @@ export class Player {
     this.crashRecoveryTimer = this.crashRecoveryDuration;
     console.log("Player has crashed!");
   }
-  
+
   /**
    * Resets player after a crash
    */
@@ -522,25 +530,25 @@ export class Player {
     this.collisionCount = 0;
     console.log("Player recovered from crash");
   }
-  
+
   /**
    * Checks if player is in a flying state
    */
   public isFlying(): boolean {
     return this.currentState === PlayerState.FLYING_DOWN ||
-           this.currentState === PlayerState.FLYING_RIGHT_DOWN ||
-           this.currentState === PlayerState.FLYING_RIGHT ||
-           this.currentState === PlayerState.FLYING_LEFT_DOWN ||
-           this.currentState === PlayerState.FLYING_LEFT;
+      this.currentState === PlayerState.FLYING_RIGHT_DOWN ||
+      this.currentState === PlayerState.FLYING_RIGHT ||
+      this.currentState === PlayerState.FLYING_LEFT_DOWN ||
+      this.currentState === PlayerState.FLYING_LEFT;
   }
-  
+
   /**
    * Checks if player is in crashed state
    */
   public isCrashed(): boolean {
     return this.currentState === PlayerState.CRASHED;
   }
-  
+
   public isInCollisionState(): boolean {
     return this.collisionEffect > 0 || this.isFlying() || this.isCrashed();
   }
