@@ -94,7 +94,7 @@
         <key>algorithmSettings</key>
         <struct type="AlgorithmSettings">
             <key>algorithm</key>
-            <enum type="AlgorithmSettings::AlgorithmId">Grid</enum>
+            <enum type="AlgorithmSettings::AlgorithmId">MaxRects</enum>
             <key>freeSizeMode</key>
             <enum type="AlgorithmSettings::AlgorithmFreeSizeMode">Best</enum>
             <key>sizeConstraints</key>
@@ -161,7 +161,7 @@
             <key>trimMargin</key>
             <uint>1</uint>
             <key>trimMode</key>
-            <enum type="SpriteSettings::TrimMode">None</enum>
+            <enum type="SpriteSettings::TrimMode">Trim</enum>
             <key>tracerTolerance</key>
             <int>200</int>
             <key>heuristicMask</key>
@@ -176,12 +176,6 @@
             <key type="filename">final ski/skiier/crash.png</key>
             <key type="filename">final ski/skiier/right down crash 1.png</key>
             <key type="filename">final ski/skiier/right down crash 2.png</key>
-            <key type="filename">final ski/skiier/skiier right down.png</key>
-            <key type="filename">final ski/skiier/skiier right.png</key>
-            <key type="filename">final ski/skiier/skiier2 down.png</key>
-            <key type="filename">final ski/skiier/skiier2 right down.png</key>
-            <key type="filename">final ski/skiier/skiier2 right.png</key>
-            <key type="filename">final ski/skiier/skiier3 down.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
@@ -197,7 +191,6 @@
                 <false/>
             </struct>
             <key type="filename">final ski/skiier/down crash 1.png</key>
-            <key type="filename">final ski/skiier/skiier down.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
@@ -212,12 +205,47 @@
                 <key>scale9FromFile</key>
                 <false/>
             </struct>
+            <key type="filename">final ski/skiier/skiier down.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>0.8</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>256,384,512,768</rect>
+                <key>scale9Paddings</key>
+                <rect>256,384,512,768</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
+            <key type="filename">final ski/skiier/skiier right down.png</key>
+            <key type="filename">final ski/skiier/skiier right.png</key>
+            <key type="filename">final ski/skiier/skiier2 down.png</key>
+            <key type="filename">final ski/skiier/skiier2 right down.png</key>
+            <key type="filename">final ski/skiier/skiier2 right.png</key>
+            <key type="filename">final ski/skiier/skiier3 down.png</key>
+            <struct type="IndividualSpriteSettings">
+                <key>pivotPoint</key>
+                <point_f>0.5,0.5</point_f>
+                <key>spriteScale</key>
+                <double>0.4</double>
+                <key>scale9Enabled</key>
+                <false/>
+                <key>scale9Borders</key>
+                <rect>256,256,512,512</rect>
+                <key>scale9Paddings</key>
+                <rect>256,256,512,512</rect>
+                <key>scale9FromFile</key>
+                <false/>
+            </struct>
             <key type="filename">final ski/skiier/skiier3 right down.png</key>
             <struct type="IndividualSpriteSettings">
                 <key>pivotPoint</key>
                 <point_f>0.5,0.5</point_f>
                 <key>spriteScale</key>
-                <double>0.5</double>
+                <double>0.4</double>
                 <key>scale9Enabled</key>
                 <false/>
                 <key>scale9Borders</key>

@@ -200,8 +200,9 @@ export class Player implements RenderableObject {
         );
         
         if (sprite) {
-          console.debug(`Loaded sprite for state ${PlayerState[mapping.state]}: ${mapping.name}`);
-          console.debug(`Sprite dimensions: ${sprite["srcWidth"]} x ${sprite["srcHeight"]}`);
+          // Debug log to verify rotation information
+          console.debug(`Loaded sprite for state ${PlayerState[mapping.state]}: ${mapping.name}, rotated: ${sprite.isRotated()}`);
+          console.log(`Sprite dimensions: ${sprite.getSrcWidth()} x ${sprite.getSrcHeight()}`);
           this.sprites.set(mapping.state, sprite);
         } else {
           console.warn(`Sprite not found for state ${PlayerState[mapping.state]}, name: ${mapping.name}`);
@@ -341,9 +342,23 @@ export class Player implements RenderableObject {
     }
 
     if (this.currentState !== PlayerState.CRASHED && !this.isFlying()) {
-      const skiOffset = 30
-      const adjustedHeightPos = this.worldPos.y - this.currentVisualHeight + skiOffset;
-      this.game.skiTrack.addPoint(this.worldPos.x, adjustedHeightPos);
+      // Use a fixed offset below the sprite for ski tracks
+      const skiOffset = 40; // Increased offset to place tracks at the "feet" of the skier
+      
+      // Calculate position at the bottom center of the sprite bounding box
+      const trackX = this.worldPos.x;
+      let trackY = this.worldPos.y;
+      
+      // Account for terrain height adjustment
+      if (this.useTerrainHeight) {
+        trackY -= this.currentVisualHeight;
+      }
+      
+      // Offset downward to place tracks at the skier's "feet"
+      trackY += skiOffset;
+      
+      // Add the ski track point
+      this.game.skiTrack.addPoint(trackX, trackY);
     }
 
     // Update state transition timer

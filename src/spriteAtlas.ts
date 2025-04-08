@@ -128,14 +128,29 @@ export class SpriteAtlas {
   private processFrame(frame: TexturePackerFrame): void {
     const { x, y, w, h } = frame.frame;
     
-    // Create a sprite for this frame
+    // Extract trim information from TexturePacker data
+    const trimmed = frame.trimmed;
+    const srcOffsetX = trimmed ? frame.spriteSourceSize.x : 0;
+    const srcOffsetY = trimmed ? frame.spriteSourceSize.y : 0;
+    const origWidth = frame.sourceSize.w;
+    const origHeight = frame.sourceSize.h;
+    
+    // Create a sprite for this frame, passing all relevant TexturePacker data
     const sprite = new Sprite(
       this.p,
       this.spriteSheet!,
-      x, 
-      y,
-      w,
-      h
+      x,                   // srcX
+      y,                   // srcY
+      w,                   // srcWidth 
+      h,                   // srcHeight
+      false,               // Not flipped
+      1.0,                 // Default scale
+      frame.rotated,       // Rotation flag
+      trimmed,             // Trimmed flag
+      srcOffsetX,          // Source offset X
+      srcOffsetY,          // Source offset Y
+      origWidth,           // Original width
+      origHeight           // Original height
     );
     
     // Store the sprite with its filename as the key
@@ -146,7 +161,7 @@ export class SpriteAtlas {
     this.sprites.set(nameWithoutExtension, sprite);
     
     // Log for debugging
-    console.debug(`Added sprite: ${frame.filename}, position: ${x},${y}, size: ${w}x${h}`);
+    console.debug(`Added sprite: ${frame.filename}, position: ${x},${y}, size: ${w}x${h}, rotated: ${frame.rotated}, trimmed: ${trimmed}`);
   }
 
   public getSprite(name: string, flip: boolean = false, scale: number = 1.0): Sprite | null {
@@ -164,6 +179,7 @@ export class SpriteAtlas {
     }
     
     // Create a new sprite with the flip and scale options
+    // Preserve ALL the original sprite properties including trimming info
     return new Sprite(
       this.p,
       this.spriteSheet!,
@@ -172,7 +188,13 @@ export class SpriteAtlas {
       sprite.getSrcWidth(),
       sprite.getSrcHeight(),
       flip,
-      scale
+      scale,
+      sprite.isRotated(),
+      sprite.isTrimmed(),
+      sprite.isTrimmed() ? sprite.getSrcOffsetX() : 0,
+      sprite.isTrimmed() ? sprite.getSrcOffsetY() : 0,
+      sprite.getOrigWidth(),
+      sprite.getOrigHeight()
     );
   }
 

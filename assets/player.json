@@ -2,91 +2,115 @@
 
 {
 	"filename": "crash.png",
-	"frame": {"x":0,"y":0,"w":512,"h":512},
+	"frame": {"x":0,"y":410,"w":398,"h":402},
 	"rotated": false,
-	"trimmed": false,
-	"spriteSourceSize": {"x":0,"y":0,"w":512,"h":512},
+	"trimmed": true,
+	"spriteSourceSize": {"x":58,"y":71,"w":398,"h":402},
 	"sourceSize": {"w":512,"h":512}
 },
 {
 	"filename": "down crash 1.png",
-	"frame": {"x":512,"y":0,"w":512,"h":512},
-	"rotated": false,
-	"trimmed": false,
-	"spriteSourceSize": {"x":0,"y":0,"w":512,"h":512},
-	"sourceSize": {"w":512,"h":512}
+	"frame": {"x":687,"y":378,"w":345,"h":299},
+	"rotated": true,
+	"trimmed": true,
+	"spriteSourceSize": {"x":56,"y":83,"w":345,"h":299},
+	"sourceSize": {"w":461,"h":461}
 },
 {
 	"filename": "right down crash 1.png",
-	"frame": {"x":1024,"y":0,"w":512,"h":512},
+	"frame": {"x":359,"y":812,"w":354,"h":398},
 	"rotated": false,
-	"trimmed": false,
-	"spriteSourceSize": {"x":0,"y":0,"w":512,"h":512},
+	"trimmed": true,
+	"spriteSourceSize": {"x":90,"y":59,"w":354,"h":398},
 	"sourceSize": {"w":512,"h":512}
 },
 {
 	"filename": "right down crash 2.png",
-	"frame": {"x":1536,"y":0,"w":512,"h":512},
-	"rotated": false,
-	"trimmed": false,
-	"spriteSourceSize": {"x":0,"y":0,"w":512,"h":512},
+	"frame": {"x":0,"y":812,"w":427,"h":359},
+	"rotated": true,
+	"trimmed": true,
+	"spriteSourceSize": {"x":35,"y":85,"w":427,"h":359},
 	"sourceSize": {"w":512,"h":512}
 },
 {
 	"filename": "skiier down.png",
-	"frame": {"x":0,"y":512,"w":512,"h":512},
+	"frame": {"x":947,"y":1028,"w":186,"h":204},
 	"rotated": false,
-	"trimmed": false,
-	"spriteSourceSize": {"x":0,"y":0,"w":512,"h":512},
-	"sourceSize": {"w":512,"h":512}
+	"trimmed": true,
+	"spriteSourceSize": {"x":35,"y":26,"w":186,"h":204},
+	"sourceSize": {"w":256,"h":256}
 },
 {
 	"filename": "skiier right down.png",
-	"frame": {"x":512,"y":512,"w":512,"h":512},
+	"frame": {"x":713,"y":723,"w":234,"h":331},
 	"rotated": false,
-	"trimmed": false,
-	"spriteSourceSize": {"x":0,"y":0,"w":512,"h":512},
-	"sourceSize": {"w":512,"h":512}
+	"trimmed": true,
+	"spriteSourceSize": {"x":79,"y":39,"w":234,"h":331},
+	"sourceSize": {"w":410,"h":410}
 },
 {
 	"filename": "skiier right.png",
-	"frame": {"x":1024,"y":512,"w":512,"h":512},
+	"frame": {"x":689,"y":0,"w":267,"h":370},
 	"rotated": false,
-	"trimmed": false,
-	"spriteSourceSize": {"x":0,"y":0,"w":512,"h":512},
-	"sourceSize": {"w":512,"h":512}
+	"trimmed": true,
+	"spriteSourceSize": {"x":70,"y":22,"w":267,"h":370},
+	"sourceSize": {"w":410,"h":410}
 },
 {
 	"filename": "skiier2 down.png",
-	"frame": {"x":1536,"y":512,"w":512,"h":512},
+	"frame": {"x":986,"y":353,"w":251,"h":341},
 	"rotated": false,
-	"trimmed": false,
-	"spriteSourceSize": {"x":0,"y":0,"w":512,"h":512},
-	"sourceSize": {"w":512,"h":512}
+	"trimmed": true,
+	"spriteSourceSize": {"x":76,"y":33,"w":251,"h":341},
+	"sourceSize": {"w":410,"h":410}
 },
 {
 	"filename": "skiier2 right down.png",
-	"frame": {"x":0,"y":1024,"w":512,"h":512},
+	"frame": {"x":986,"y":694,"w":243,"h":334},
 	"rotated": false,
-	"trimmed": false,
-	"spriteSourceSize": {"x":0,"y":0,"w":512,"h":512},
-	"sourceSize": {"w":512,"h":512}
+	"trimmed": true,
+	"spriteSourceSize": {"x":86,"y":34,"w":243,"h":334},
+	"sourceSize": {"w":410,"h":410}
 },
 {
 	"filename": "skiier2 right.png",
-	"frame": {"x":512,"y":1024,"w":512,"h":512},
+	"frame": {"x":956,"y":0,"w":257,"h":353},
+	"rotated": false,
+	"trimmed": true,
+	"spriteSourceSize": {"x":57,"y":23,"w":257,"h":353},
+	"sourceSize": {"w":410,"h":410}
+},
+{
+	"filename": "skiier3 down.png",
+	"frame": {"x":0,"y":0,"w":410,"h":410},
 	"rotated": false,
 	"trimmed": false,
-	"spriteSourceSize": {"x":0,"y":0,"w":512,"h":512},
-	"sourceSize": {"w":512,"h":512}
+	"spriteSourceSize": {"x":0,"y":0,"w":410,"h":410},
+	"sourceSize": {"w":410,"h":410}
+},
+{
+	"filename": "skiier3 right down.png",
+	"frame": {"x":398,"y":410,"w":289,"h":382},
+	"rotated": false,
+	"trimmed": true,
+	"spriteSourceSize": {"x":63,"y":12,"w":289,"h":382},
+	"sourceSize": {"w":410,"h":410}
+},
+{
+	"filename": "skiier3 right.png",
+	"frame": {"x":410,"y":0,"w":279,"h":378},
+	"rotated": false,
+	"trimmed": true,
+	"spriteSourceSize": {"x":70,"y":16,"w":279,"h":378},
+	"sourceSize": {"w":410,"h":410}
 }],
 "meta": {
 	"app": "https://www.codeandweb.com/texturepacker",
 	"version": "1.0",
 	"image": "player.png",
 	"format": "RGBA8888",
-	"size": {"w":2048,"h":1536},
+	"size": {"w":1239,"h":1239},
 	"scale": "1",
-	"smartupdate": "$TexturePacker:SmartUpdate:a4fd937dd99e1a19a7525b2a26bf0203:68318f7be8dd062aa8773554b64b3ab0:86d5339b780aedd87b35e2b7c0a7e11b$"
+	"smartupdate": "$TexturePacker:SmartUpdate:c444b02b40bd232a577a1ef4a7eeb6da:8c56b9c7972b312db7b6bb883f602b45:86d5339b780aedd87b35e2b7c0a7e11b$"
 }
 }

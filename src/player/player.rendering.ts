@@ -55,21 +55,9 @@ export class PlayerRenderer {
             y -= this.playerData.currentVisualHeight;
         }
 
-        this.playerData.p.push(); // Save current transformation state
-
-        // Apply terrain-based rotation using pre-calculated smooth rotation
-        if (this.playerData.useTerrainRotation && !this.playerData.isFlying() && !this.playerData.isCrashed()) {
-            // Apply rotation based on pre-calculated smooth rotation
-            // Translate to player position, rotate, then translate back
-            this.playerData.p.translate(x, y);
-            this.playerData.p.rotate(this.playerData.currentRotation);
-            this.playerData.p.translate(-x, -y);
-        }
-
-        // Render the sprite
+        // Render the sprite - let the Sprite class handle the rotation
+        // The sprite.render() method will apply all transformations correctly
         sprite.render(x, y, this.playerData.width, this.playerData.height);
-
-        this.playerData.p.pop(); // Restore transformation state
 
         if (this.playerData.collisionEffect > 0) {
             this.playerData.p.pop(); // Restore drawing state (for collision effect)
@@ -78,7 +66,7 @@ export class PlayerRenderer {
         // Render debug hitbox if debug mode is enabled
         this.renderDebugHitbox();
 
-        // Debug visualization for terrain height adjustment
+        // Debug visualization for terrain height adjustment and sprite rotation
         if (this.playerData.debug) {
             const terrainHeight = this.playerData.game.world.getHeightAtPosition(this.playerData.worldPos);
             const slope = this.playerData.game.world.getSlopeAtPosition(this.playerData.worldPos);
@@ -102,6 +90,7 @@ export class PlayerRenderer {
             this.playerData.p.noStroke();
             this.playerData.p.text(`Visual Height: ${this.playerData.currentVisualHeight.toFixed(2)}`, 10, 210);
             this.playerData.p.text(`Visual Rotation: ${(this.playerData.currentRotation * 180 / Math.PI).toFixed(2)}°`, 10, 230);
+            this.playerData.p.text(`Sprite Rotated: ${sprite.isRotated()}`, 10, 250);
         }
     }
 

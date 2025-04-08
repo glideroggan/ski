@@ -1,5 +1,7 @@
 # BUGS
 - the snowman needs a shadow
+- wrong color of jacket on skier 2
+- wrong color on hat and jacket on skier 3
 
 # TODO
 - fix the little face in the corner that can react to things happening in the game
