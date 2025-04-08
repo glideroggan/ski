@@ -85,7 +85,7 @@ export class Game {
   private loadAssets(): void {
     console.debug("Loading game assets...");
 
-    let assetsToLoad = 2;
+    let assetsToLoad = 1; // Reduced from 2 to 1 since ObstacleManager loads its own assets
     let assetsLoaded = 0;
 
     // Load background image
@@ -105,23 +105,8 @@ export class Game {
       }
     );
 
-    // Load obstacle spritesheet
-    this.p.loadImage('assets/obstacles.png',
-      (img: p5.Image) => {
-        console.debug("Obstacle spritesheet loaded:", img.width, "x", img.height);
-        this.spriteSheet = img; // Save reference to obstacle spritesheet
-        this.obstacleManager.setSpriteSheet(img);
-        assetsLoaded++;
-        if (assetsLoaded === assetsToLoad) {
-          this.assetsLoaded = true;
-          console.debug("All assets loaded successfully");
-        }
-      },
-      (err) => {
-        console.error('Failed to load obstacles.png:', err);
-        this.assetsLoadingFailed = true;
-      }
-    );
+    // No need to load obstacle spritesheet here anymore 
+    // as ObstacleManager handles its own asset loading via SpriteAtlas
   }
 
   public update(): void {
@@ -403,12 +388,9 @@ export class Game {
     // Reset player position
     this.player = new Player(this.p, { x: 0, y: 0 }, this);
 
-    // Clear obstacles
+    // Create a new obstacle manager which will load its own assets
     this.obstacleManager = new ObstacleManager(this.p, this);
-    if (this.spriteSheet) {
-      this.obstacleManager.setSpriteSheet(this.spriteSheet);
-    }
-
+    
     // Reset ski tracks
     this.skiTrack = new SkiTrack(this);
 
@@ -486,8 +468,7 @@ export class Game {
   public loadAllAtlases(): Promise<void> {
     const promises: Promise<SpriteAtlas>[] = [
       this.loadSpriteAtlas('player', 'assets/player.json', 'assets/player.png'),
-      // Add more atlases here as needed:
-      // this.loadSpriteAtlas('obstacles', 'assets/obstacles.json')
+      this.loadSpriteAtlas('obstacles', 'assets/obstacles.json', 'assets/obstacles.png')
     ];
     
     return Promise.all(promises).then(() => {

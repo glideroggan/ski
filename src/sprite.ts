@@ -140,7 +140,6 @@ export class Sprite {
       }
       
       this.spriteHeight = spriteHeight
-      console.log("spriteHeight", spriteHeight) 
       // Draw the sprite (accounting for rotation and trim offsets)
       this.p.image(
         this.spriteSheet,

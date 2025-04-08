@@ -142,7 +142,6 @@ export class PlayerUpdate {
                 this.playerData.currentVisualHeight * (1 - this.heightSmoothingFactor) +
                 (terrainHeight * this.playerData.terrainHeightFactor) * this.heightSmoothingFactor
             );
-            console.log("Current visual height:", this.playerData.currentVisualHeight);
         }
 
         // Always calculate terrain rotation for smoother transitions

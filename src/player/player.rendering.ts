@@ -46,7 +46,6 @@ export class PlayerRenderer {
         // ALWAYS apply terrain height adjustment, regardless of the flag
         // This ensures visual consistency with ski tracks
         y -= this.playerData.currentVisualHeight;
-        console.log(`Player Y position adjusted for terrain height: ${this.playerData.currentVisualHeight}`);
 
         this.playerData.p.push();
         

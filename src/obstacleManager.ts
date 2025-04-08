@@ -3,6 +3,7 @@ import { Sprite } from './sprite';
 import { Player } from './player/player';
 import { Game, RenderableObject } from './game';
 import { Position } from './camera';
+import { SpriteAtlas } from './spriteAtlas'; // Import SpriteAtlas
 
 // Interface for obstacle dimensions
 export interface ObstacleDimensions {
@@ -38,6 +39,7 @@ export class ObstacleManager {
   private debug: boolean = false; // Set to true to show collision boxes
   private game: Game; // Reference to the game for coordinate conversion
   private types:string[] = ['tree', 'rock', 'snowman'];
+  private atlasLoaded: boolean = false;
   
   // Store dimensions for each obstacle type
   private obstacleDimensions: Map<string, ObstacleDimensions> = new Map([
@@ -57,9 +59,64 @@ export class ObstacleManager {
   constructor(p: p5, game: Game) {
     this.p = p;
     this.game = game;
+    this.loadAssets();
+  }
+  
+  public loadAssets(): void {
+    // Create sprite atlas
+    const spriteAtlas = new SpriteAtlas(this.p);
+    
+    // Load the TexturePacker atlas
+    spriteAtlas.loadAtlas('assets/obstacles.json', 'assets/obstacles.png')
+      .then(() => {
+        console.debug("Obstacles sprite atlas loaded successfully");
+        this.setupSpritesFromAtlas(spriteAtlas);
+        this.atlasLoaded = true;
+      })
+      .catch(err => {
+        console.error("Failed to load obstacles sprite atlas:", err);
+      });
+  }
+  
+  private setupSpritesFromAtlas(spriteAtlas: SpriteAtlas): void {
+    if (!spriteAtlas.isLoaded()) {
+      console.error("Cannot setup obstacle sprites: sprite atlas is not loaded");
+      return;
+    }
+    
+    try {
+      // Map TexturePacker frame names to obstacle types
+      const spriteTypeMapping = [
+        { type: 'tree', name: 'tree', scale: 1.7 },
+        { type: 'rock', name: 'rock', scale: 1.0 },
+        { type: 'snowman', name: 'snowman', scale: 1.0 }
+      ];
+      
+      // Add sprites to the map
+      for (const mapping of spriteTypeMapping) {
+        const sprite = spriteAtlas.getSprite(
+          mapping.name + ".png", // Try with extension first
+          false,
+          mapping.scale
+        );
+        
+        if (sprite) {
+          console.debug(`Loaded sprite for obstacle type ${mapping.type}: ${mapping.name}`);
+          this.sprites.set(mapping.type, sprite);
+        } else {
+          console.warn(`Sprite not found for obstacle type ${mapping.type}, name: ${mapping.name}`);
+        }
+      }
+      
+      console.debug(`Loaded ${this.sprites.size} obstacle sprites from atlas`);
+    } catch (error) {
+      console.error("Error setting up obstacle sprites from atlas:", error);
+    }
   }
   
   public setSpriteSheet(spriteSheet: p5.Image): void {
+    // This method is kept for backward compatibility
+    // It will be used as a fallback if the atlas loading fails
     this.spriteSheet = spriteSheet;
     this.setupSprites();
   }

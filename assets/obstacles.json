@@ -1,7 +1,7 @@
 {"frames": [
 
 {
-	"filename": "rocks.png",
+	"filename": "rock.png",
 	"frame": {"x":988,"y":1,"w":991,"h":646},
 	"rotated": false,
 	"trimmed": true,
@@ -17,7 +17,7 @@
 	"sourceSize": {"w":1024,"h":1024}
 },
 {
-	"filename": "tree1.png",
+	"filename": "tree.png",
 	"frame": {"x":1,"y":1,"w":1023,"h":985},
 	"rotated": true,
 	"trimmed": true,
@@ -31,6 +31,6 @@
 	"format": "RGBA8888",
 	"size": {"w":1980,"h":1525},
 	"scale": "1",
-	"smartupdate": "$TexturePacker:SmartUpdate:5c62ce2d016c5e1e71fe310472421679:51d91bd5dbd0d2fa51a11348a7606db4:641f848f5767e234ed2c8b58348ca01d$"
+	"smartupdate": "$TexturePacker:SmartUpdate:1f9e67dbac3e9f0489ad34ef363a58a9:51d91bd5dbd0d2fa51a11348a7606db4:641f848f5767e234ed2c8b58348ca01d$"
 }
 }
