@@ -33,12 +33,14 @@ Can also increase their speed by pressing down
 ### Visual Effects
 - Progressive Visibility Reduction: A semi-transparent white gradient overlay that gets more opaque toward the bottom of the screen
 - Particle System: Varying densities of snowflakes based on storm intensity
+  - four different "particle" assets
 - Screen Shake: Subtle camera shake during intense blizzard conditions
 ### Gameplay Mechanics
 - Visibility Range: During storms, obstacles would only become visible when closer to the player
 - Weather Progression:
   - Clear conditions → Light snow → Heavy snow → Blizzard
 - Weather could change gradually or suddenly (surprise blizzards!)
+#### LATER
 Difficulty Scaling: Weather could change more frequently as the game progresses, increasing the challenge
 
 ## IDEAS

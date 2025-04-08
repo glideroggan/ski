@@ -1,30 +1,23 @@
-import { PlayerRenderData, PlayerState } from "./player";
+import { Player, PlayerData, PlayerState } from "./player";
 
 export class PlayerRenderer {
-    private playerData: PlayerRenderData;
+    private playerData: PlayerData;
+    private player: Player;
 
-    constructor(playerData: PlayerRenderData) {
+    constructor(playerData: PlayerData, player: Player) {
         this.playerData = playerData;
-    }
-
-    // Method to update render data from player
-    public updateRenderData(newData: PlayerRenderData): void {
-        this.playerData = newData;
+        this.player = player;
     }
 
     render(): void {
-        // Changed condition to only check if sprites are available
-        // We don't need spriteSheet directly when using sprites from an atlas
         if (!this.playerData.assetsLoaded || this.playerData.sprites.size === 0) {
-            // Log debug info about asset loading state
-            console.warn(`Assets loaded: ${this.playerData.assetsLoaded}, Sprites available: ${this.playerData.sprites.size}, SpriteSheet: ${this.playerData.spriteSheet}`);
+            console.warn(`Assets loaded: ${this.playerData.assetsLoaded}, Sprites available: ${this.playerData.sprites.size}`);
             console.warn("Assets not loaded or no sprites available for rendering.");
             return;
         }
 
         const sprite = this.playerData.sprites.get(this.playerData.currentState);
         if (!sprite) {
-            // Skip rendering if sprite isn't available
             console.warn(`Sprite not found for state ${PlayerState[this.playerData.currentState]}`);
             return;
         }
@@ -50,14 +43,27 @@ export class PlayerRenderer {
         let x = screenPos.x;
         let y = screenPos.y;
 
-        // Apply terrain height adjustment using pre-calculated smooth height
-        if (this.playerData.useTerrainHeight) {
-            y -= this.playerData.currentVisualHeight;
-        }
+        // ALWAYS apply terrain height adjustment, regardless of the flag
+        // This ensures visual consistency with ski tracks
+        y -= this.playerData.currentVisualHeight;
+        console.log(`Player Y position adjusted for terrain height: ${this.playerData.currentVisualHeight}`);
 
-        // Render the sprite - let the Sprite class handle the rotation
-        // The sprite.render() method will apply all transformations correctly
-        sprite.render(x, y, this.playerData.width, this.playerData.height);
+        this.playerData.p.push();
+        
+        // ALWAYS apply terrain rotation if not flying or crashed, regardless of the flag
+        if (!this.player.isFlying() && !this.player.isCrashed()) {
+            // Translate to the sprite's position, rotate, then draw
+            this.playerData.p.translate(x, y);
+            this.playerData.p.rotate(this.playerData.currentRotation);
+            
+            // Render the sprite at the origin (0,0) since we've translated to its position
+            sprite.render(0, 0, this.playerData.width, this.playerData.height);
+        } else {
+            // Draw normally without rotation
+            sprite.render(x, y, this.playerData.width, this.playerData.height);
+        }
+        
+        this.playerData.p.pop();
 
         if (this.playerData.collisionEffect > 0) {
             this.playerData.p.pop(); // Restore drawing state (for collision effect)
@@ -81,16 +87,20 @@ export class PlayerRenderer {
             this.playerData.p.line(
                 x,
                 y,
-                x + Math.cos(this.playerData.currentRotation / this.playerData.terrainRotationFactor) * slopeLength,
-                y + Math.sin(this.playerData.currentRotation / this.playerData.terrainRotationFactor) * slopeLength
+                x + Math.cos(this.playerData.currentRotation) * slopeLength,
+                y + Math.sin(this.playerData.currentRotation) * slopeLength
             );
 
-            // Display smoothed height value
+            // Display debug values
             this.playerData.p.fill(255, 255, 0);
             this.playerData.p.noStroke();
             this.playerData.p.text(`Visual Height: ${this.playerData.currentVisualHeight.toFixed(2)}`, 10, 210);
             this.playerData.p.text(`Visual Rotation: ${(this.playerData.currentRotation * 180 / Math.PI).toFixed(2)}°`, 10, 230);
-            this.playerData.p.text(`Sprite Rotated: ${sprite.isRotated()}`, 10, 250);
+            
+            // Show terrain bumpiness info
+            this.playerData.p.fill(0, 255, 255);
+            this.playerData.p.text(`Terrain bumpy: ${terrainHeight.toFixed(3)}`, 10, 250);
+            this.playerData.p.text(`Slope angle: ${(slope.angle * 180 / Math.PI).toFixed(1)}°`, 10, 270);
         }
     }
 

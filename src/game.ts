@@ -177,14 +177,6 @@ export class Game {
       this.rightKeyPressed = false;
     }
 
-    // if (this.inputHandler.isKeyDown(undefined, this.p.DOWN_ARROW) && !this.downKeyPressed) {
-    //   this.downKeyPressed = true;
-    //   this.increaseSpeed();
-    // }
-    else if (!this.inputHandler.isKeyDown(undefined, this.p.DOWN_ARROW) && this.downKeyPressed) {
-      this.downKeyPressed = false;
-    }
-
     // Toggle debug mode with 'D' key
     if (this.inputHandler.isKeyDown(undefined, 68) && !this.debugKeyPressed) { // 68 is keyCode for 'D'
       this.debugKeyPressed = true;
@@ -340,6 +332,18 @@ export class Game {
         this.p.fill(255, 255, 0);
         this.p.text(`Collision: ${this.player.isInCollisionState() ? 'YES' : 'NO'}`, 10, 90);
       }
+      
+      // Get terrain info at player position for debug display
+      if (this.world && this.player) {
+        const playerPos = this.player.worldPos;
+        const terrainHeight = this.world.getHeightAtPosition(playerPos);
+        const slope = this.world.getSlopeAtPosition(playerPos);
+        
+        this.p.fill(0, 255, 255); // Cyan for terrain info
+        this.p.text(`Terrain bumpiness: ${terrainHeight.toFixed(3)}`, 10, 110);
+        this.p.text(`Terrain slope: ${(slope.angle * 180 / Math.PI).toFixed(1)}°`, 10, 130);
+        this.p.text(`Rotation effect: ${(this.player.getCurrentRotation() * 180 / Math.PI).toFixed(1)}°`, 10, 150);
+      }
     }
   }
 
@@ -378,13 +382,7 @@ export class Game {
         this.togglePause();
       } else if (this.debug) {
         // Debug mode controls
-        if (this.p.key === 'h' || this.p.key === 'H') {
-          // Toggle terrain height adjustment
-          this.player.toggleTerrainHeight();
-        } else if (this.p.key === 'r' || this.p.key === 'R') {
-          // Toggle terrain rotation adjustment
-          this.player.toggleTerrainRotation();
-        } else if (this.p.key === 'm' || this.p.key === 'M') {
+        if (this.p.key === 'm' || this.p.key === 'M') {
           // Toggle heightmap visualization
           this.world.toggleDebugHeightmap();
         }

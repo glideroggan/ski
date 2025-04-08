@@ -18,6 +18,9 @@ export class Sprite {
   private origWidth: number;
   private origHeight: number;
   
+  // Store the actual rendered height of the sprite
+  spriteHeight: number = 0;
+  
   constructor(
     p: p5,
     spriteSheet: p5.Image,
@@ -48,6 +51,13 @@ export class Sprite {
     this.srcOffsetY = srcOffsetY;
     this.origWidth = origWidth > 0 ? origWidth : srcWidth;
     this.origHeight = origHeight > 0 ? origHeight : srcHeight;
+
+    // Initialize spriteHeight based on original height and scale
+    if (!rotated) {
+      this.spriteHeight = srcHeight * scale;
+    } else {
+      this.spriteHeight = srcWidth * scale;
+    }
   }
   
   public render(x: number, y: number, width?: number, height?: number): void {
@@ -76,6 +86,8 @@ export class Sprite {
       // Calculate the dimensions of the sprite in the atlas
       const spriteWidth = this.srcWidth * (scaledWidth / this.origWidth);
       const spriteHeight = this.srcHeight * (scaledHeight / this.origHeight);
+
+
       
       // Calculate offset from center for trimmed sprites
       let offsetX = 0;
@@ -87,6 +99,8 @@ export class Sprite {
         offsetX = (this.srcOffsetX * 2 - (this.origWidth - this.srcWidth)) * (scaledWidth / this.origWidth) / 2;
         offsetY = (this.srcOffsetY * 2 - (this.origHeight - this.srcHeight)) * (scaledHeight / this.origHeight) / 2;
       }
+
+      this.spriteHeight = spriteHeight
       
       // Draw the sprite (accounting for trim offsets)
       this.p.image(
@@ -125,6 +139,8 @@ export class Sprite {
         offsetX = -(this.srcOffsetY * 2 - (this.origHeight - this.srcWidth)) * (scaledHeight / this.origHeight) / 2;
       }
       
+      this.spriteHeight = spriteHeight
+      console.log("spriteHeight", spriteHeight) 
       // Draw the sprite (accounting for rotation and trim offsets)
       this.p.image(
         this.spriteSheet,
@@ -197,5 +213,10 @@ export class Sprite {
   
   public getSrcOffsetY(): number {
     return this.srcOffsetY;
+  }
+
+  // Add a getter method for spriteHeight
+  public getSpriteHeight(): number {
+    return this.spriteHeight;
   }
 }

@@ -1,0 +1,36 @@
+{"frames": [
+
+{
+	"filename": "rocks.png",
+	"frame": {"x":988,"y":1,"w":991,"h":646},
+	"rotated": false,
+	"trimmed": true,
+	"spriteSourceSize": {"x":10,"y":303,"w":991,"h":646},
+	"sourceSize": {"w":1024,"h":1024}
+},
+{
+	"filename": "snowman.png",
+	"frame": {"x":988,"y":649,"w":875,"h":947},
+	"rotated": true,
+	"trimmed": true,
+	"spriteSourceSize": {"x":131,"y":5,"w":875,"h":947},
+	"sourceSize": {"w":1024,"h":1024}
+},
+{
+	"filename": "tree1.png",
+	"frame": {"x":1,"y":1,"w":1023,"h":985},
+	"rotated": true,
+	"trimmed": true,
+	"spriteSourceSize": {"x":0,"y":39,"w":1023,"h":985},
+	"sourceSize": {"w":1024,"h":1024}
+}],
+"meta": {
+	"app": "https://www.codeandweb.com/texturepacker",
+	"version": "1.0",
+	"image": "obstacles.png",
+	"format": "RGBA8888",
+	"size": {"w":1980,"h":1525},
+	"scale": "1",
+	"smartupdate": "$TexturePacker:SmartUpdate:5c62ce2d016c5e1e71fe310472421679:51d91bd5dbd0d2fa51a11348a7606db4:641f848f5767e234ed2c8b58348ca01d$"
+}
+}
