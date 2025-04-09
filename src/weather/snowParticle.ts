@@ -9,7 +9,7 @@ export class SnowParticle {
   private speedX: number = 0;
   private opacity: number = 0;
   private rotationAngle: number = 0;
-  private rotationSpeed: number = 0
+  private rotationSpeed: number = 0;
   public active: boolean = false;
   private particleType: number; // 0-3 for different shapes
   
@@ -68,7 +68,7 @@ export class SnowParticle {
       case 0: // Simple circle
         this.p.ellipse(0, 0, this.size, this.size);
         break;
-      case 1: // Simple asterisk
+      case 1: // Asterisk/snowflake shape
         this.p.push();
         for (let i = 0; i < 3; i++) {
           this.p.rotate(Math.PI / 3);

@@ -2,38 +2,38 @@
 
 {
 	"filename": "particles-0.png",
-	"frame": {"x":1,"y":1,"w":489,"h":481},
-	"rotated": true,
+	"frame": {"x":1,"y":1,"w":110,"h":112},
+	"rotated": false,
 	"trimmed": true,
-	"spriteSourceSize": {"x":0,"y":0,"w":489,"h":481},
-	"sourceSize": {"w":512,"h":512},
+	"spriteSourceSize": {"x":13,"y":9,"w":110,"h":112},
+	"sourceSize": {"w":128,"h":128},
 	"pivot": {"x":0.53125,"y":0.507813}
 },
 {
 	"filename": "particles-1.png",
-	"frame": {"x":484,"y":1,"w":461,"h":464},
-	"rotated": false,
+	"frame": {"x":217,"y":1,"w":83,"h":94},
+	"rotated": true,
 	"trimmed": true,
-	"spriteSourceSize": {"x":51,"y":0,"w":461,"h":464},
-	"sourceSize": {"w":512,"h":512},
+	"spriteSourceSize": {"x":24,"y":23,"w":83,"h":94},
+	"sourceSize": {"w":128,"h":128},
 	"pivot": {"x":0.5,"y":0.529297}
 },
 {
 	"filename": "particles-2.png",
-	"frame": {"x":947,"y":1,"w":322,"h":450},
-	"rotated": false,
+	"frame": {"x":217,"y":86,"w":27,"h":40},
+	"rotated": true,
 	"trimmed": true,
-	"spriteSourceSize": {"x":0,"y":62,"w":322,"h":450},
-	"sourceSize": {"w":512,"h":512},
+	"spriteSourceSize": {"x":54,"y":39,"w":27,"h":40},
+	"sourceSize": {"w":128,"h":128},
 	"pivot": {"x":0.517578,"y":0.476563}
 },
 {
 	"filename": "particles-3.png",
-	"frame": {"x":1271,"y":1,"w":400,"h":404},
+	"frame": {"x":113,"y":1,"w":102,"h":103},
 	"rotated": false,
 	"trimmed": true,
-	"spriteSourceSize": {"x":55,"y":64,"w":400,"h":404},
-	"sourceSize": {"w":512,"h":512},
+	"spriteSourceSize": {"x":13,"y":15,"w":102,"h":103},
+	"sourceSize": {"w":128,"h":128},
 	"pivot": {"x":0.503906,"y":0.525391}
 }],
 "meta": {
@@ -41,8 +41,8 @@
 	"version": "1.0",
 	"image": "particles.png",
 	"format": "RGBA8888",
-	"size": {"w":1672,"h":491},
-	"scale": "1",
-	"smartupdate": "$TexturePacker:SmartUpdate:c1d8625ec66e4c0cc5bc63d09214263a:42b9ff5d3ac1fa1bba412eaebd17aa26:767f0aa26e08023d62afa20c0c952bea$"
+	"size": {"w":312,"h":114},
+	"scale": "0.25",
+	"smartupdate": "$TexturePacker:SmartUpdate:fee9a51eab41a824bc62a67769e670ab:42b9ff5d3ac1fa1bba412eaebd17aa26:767f0aa26e08023d62afa20c0c952bea$"
 }
 }

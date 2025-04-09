@@ -40,7 +40,8 @@ export class WeatherSystem {
     // Create a pool of particles that will be reused
     const maxParticles = 300; // Maximum for blizzard
     for (let i = 0; i < maxParticles; i++) {
-      this.particles.push(new SnowParticle(this.p));
+      const particle = new SnowParticle(this.p);
+      this.particles.push(particle);
     }
   }
   

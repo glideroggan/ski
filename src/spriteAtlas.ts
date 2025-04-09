@@ -22,6 +22,10 @@ export interface TexturePackerFrame {
     w: number;
     h: number;
   };
+  pivot?: {
+    x: number;
+    y: number;
+  };
 }
 
 export interface TexturePackerAtlas {
@@ -50,7 +54,7 @@ export class SpriteAtlas {
     this.p = p;
   }
 
-  public loadAtlas(jsonPath: string, imagePath?: string): Promise<void> {
+  public loadAtlas(jsonPath: string, imagePath: string): Promise<void> {
     return new Promise((resolve, reject) => {
       // Load JSON atlas data
       fetch(jsonPath)
@@ -135,6 +139,10 @@ export class SpriteAtlas {
     const origWidth = frame.sourceSize.w;
     const origHeight = frame.sourceSize.h;
     
+    // Extract pivot information (default to center if not provided)
+    const pivotX = frame.pivot ? frame.pivot.x : 0.5;
+    const pivotY = frame.pivot ? frame.pivot.y : 0.5;
+    
     // Create a sprite for this frame, passing all relevant TexturePacker data
     const sprite = new Sprite(
       this.p,
@@ -150,7 +158,9 @@ export class SpriteAtlas {
       srcOffsetX,          // Source offset X
       srcOffsetY,          // Source offset Y
       origWidth,           // Original width
-      origHeight           // Original height
+      origHeight,          // Original height
+      pivotX,              // Pivot X
+      pivotY               // Pivot Y
     );
     
     // Store the sprite with its filename as the key
@@ -161,7 +171,7 @@ export class SpriteAtlas {
     this.sprites.set(nameWithoutExtension, sprite);
     
     // Log for debugging
-    console.debug(`Added sprite: ${frame.filename}, position: ${x},${y}, size: ${w}x${h}, rotated: ${frame.rotated}, trimmed: ${trimmed}`);
+    console.debug(`Added sprite: ${frame.filename}, position: ${x},${y}, size: ${w}x${h}, rotated: ${frame.rotated}, trimmed: ${trimmed}, pivot: (${pivotX}, ${pivotY})`);
   }
 
   public getSprite(name: string, flip: boolean = false, scale: number = 1.0): Sprite | null {
@@ -179,7 +189,7 @@ export class SpriteAtlas {
     }
     
     // Create a new sprite with the flip and scale options
-    // Preserve ALL the original sprite properties including trimming info
+    // Preserve ALL the original sprite properties including trimming and pivot info
     return new Sprite(
       this.p,
       this.spriteSheet!,
@@ -194,7 +204,9 @@ export class SpriteAtlas {
       sprite.isTrimmed() ? sprite.getSrcOffsetX() : 0,
       sprite.isTrimmed() ? sprite.getSrcOffsetY() : 0,
       sprite.getOrigWidth(),
-      sprite.getOrigHeight()
+      sprite.getOrigHeight(),
+      sprite.getPivotX(),
+      sprite.getPivotY()
     );
   }
 

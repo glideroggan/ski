@@ -357,7 +357,7 @@ export class Game {
   }
 
   // Load a sprite atlas and store it with the given name
-  public loadSpriteAtlas(name: string, jsonPath: string, imagePath?: string): Promise<SpriteAtlas> {
+  public loadSpriteAtlas(name: string, jsonPath: string, imagePath: string): Promise<SpriteAtlas> {
     return new Promise((resolve, reject) => {
       // Check if atlas with this name already exists
       if (this.spriteAtlases.has(name)) {

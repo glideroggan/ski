@@ -18,6 +18,10 @@ export class Sprite {
   private origWidth: number;
   private origHeight: number;
   
+  // New pivot properties
+  private pivotX: number = 0.5; // Default is center (0.5)
+  private pivotY: number = 0.5; // Default is center (0.5)
+  
   // Store the actual rendered height of the sprite
   spriteHeight: number = 0;
   
@@ -35,7 +39,9 @@ export class Sprite {
     srcOffsetX: number = 0,
     srcOffsetY: number = 0,
     origWidth: number = 0,
-    origHeight: number = 0
+    origHeight: number = 0,
+    pivotX: number = 0.5,
+    pivotY: number = 0.5
   ) {
     this.p = p;
     this.spriteSheet = spriteSheet;
@@ -51,6 +57,8 @@ export class Sprite {
     this.srcOffsetY = srcOffsetY;
     this.origWidth = origWidth > 0 ? origWidth : srcWidth;
     this.origHeight = origHeight > 0 ? origHeight : srcHeight;
+    this.pivotX = pivotX;
+    this.pivotY = pivotY;
 
     // Initialize spriteHeight based on original height and scale
     if (!rotated) {
@@ -64,7 +72,7 @@ export class Sprite {
     // Save current transformation state
     this.p.push();
     
-    // Move to the target position (center of the sprite)
+    // Move to the target position (adjusted by pivot)
     this.p.translate(x, y);
     
     // Apply horizontal flip if needed
@@ -87,22 +95,24 @@ export class Sprite {
       const spriteWidth = this.srcWidth * (scaledWidth / this.origWidth);
       const spriteHeight = this.srcHeight * (scaledHeight / this.origHeight);
 
-
-      
-      // Calculate offset from center for trimmed sprites
+      // Calculate offset from center for trimmed sprites and pivot
       let offsetX = 0;
       let offsetY = 0;
       
+      // Apply pivot offset (adjust from center positioning to pivot-based positioning)
+      offsetX += (0.5 - this.pivotX) * scaledWidth;
+      offsetY += (0.5 - this.pivotY) * scaledHeight;
+      
       if (this.trimmed) {
         // Convert TexturePacker offsets (which are from top-left)
-        // to our centered coordinate system
-        offsetX = (this.srcOffsetX * 2 - (this.origWidth - this.srcWidth)) * (scaledWidth / this.origWidth) / 2;
-        offsetY = (this.srcOffsetY * 2 - (this.origHeight - this.srcHeight)) * (scaledHeight / this.origHeight) / 2;
+        // to our pivot-based coordinate system
+        offsetX += (this.srcOffsetX * 2 - (this.origWidth - this.srcWidth)) * (scaledWidth / this.origWidth) / 2;
+        offsetY += (this.srcOffsetY * 2 - (this.origHeight - this.srcHeight)) * (scaledHeight / this.origHeight) / 2;
       }
 
-      this.spriteHeight = spriteHeight
+      this.spriteHeight = spriteHeight;
       
-      // Draw the sprite (accounting for trim offsets)
+      // Draw the sprite (accounting for trim and pivot offsets)
       this.p.image(
         this.spriteSheet,
         -spriteWidth / 2 + offsetX,  // Centered X + offset
@@ -121,7 +131,7 @@ export class Sprite {
       // For rotated sprites, we need to:
       // 1. Apply a counter-rotation
       // 2. Swap width/height for the sprite
-      // 3. Adjust positioning for trimming
+      // 3. Adjust positioning for trimming and pivot
       this.p.rotate(-this.p.HALF_PI);
       
       // Calculate the dimensions of the sprite in the atlas (with width/height swapped)
@@ -132,15 +142,19 @@ export class Sprite {
       let offsetX = 0;
       let offsetY = 0;
       
+      // Apply pivot offset for rotated sprites (with x/y swapped due to rotation)
+      offsetY += (0.5 - this.pivotX) * scaledWidth;
+      offsetX -= (0.5 - this.pivotY) * scaledHeight;
+      
       if (this.trimmed) {
         // For rotated sprites, the offsets need special handling
         // X offset becomes Y offset and Y offset becomes X offset with sign changes
-        offsetY = (this.srcOffsetX * 2 - (this.origWidth - this.srcHeight)) * (scaledWidth / this.origWidth) / 2;
-        offsetX = -(this.srcOffsetY * 2 - (this.origHeight - this.srcWidth)) * (scaledHeight / this.origHeight) / 2;
+        offsetY += (this.srcOffsetX * 2 - (this.origWidth - this.srcHeight)) * (scaledWidth / this.origWidth) / 2;
+        offsetX -= (this.srcOffsetY * 2 - (this.origHeight - this.srcWidth)) * (scaledHeight / this.origHeight) / 2;
       }
       
-      this.spriteHeight = spriteHeight
-      // Draw the sprite (accounting for rotation and trim offsets)
+      this.spriteHeight = spriteHeight;
+      // Draw the sprite (accounting for rotation, trim offsets, and pivot)
       this.p.image(
         this.spriteSheet,
         -spriteHeight / 2 + offsetX, // Note: width and height are swapped in rotated context
@@ -159,6 +173,10 @@ export class Sprite {
       this.p.noFill();
       this.p.stroke(255, 0, 0);
       this.p.rect(-scaledWidth/2, -scaledHeight/2, scaledWidth, scaledHeight);
+      
+      // Draw pivot point for debugging
+      this.p.stroke(0, 255, 0);
+      this.p.point(0, 0);
     }
     
     // Restore transformation state
@@ -217,5 +235,18 @@ export class Sprite {
   // Add a getter method for spriteHeight
   public getSpriteHeight(): number {
     return this.spriteHeight;
+  }
+
+  public setPivot(pivotX: number, pivotY: number): void {
+    this.pivotX = pivotX;
+    this.pivotY = pivotY;
+  }
+  
+  public getPivotX(): number {
+    return this.pivotX;
+  }
+  
+  public getPivotY(): number {
+    return this.pivotY;
   }
 }
