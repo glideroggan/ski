@@ -1,15 +1,16 @@
-import { Player, PlayerState } from './player/player';
-import { ObstacleManager, Obstacle } from './obstacleManager';
+import { Player } from './player/player';
+import { EntityManager } from './entityManager';
 import p5 from 'p5';
 import { SkiTrack } from './skiTrack';
 import { Camera } from './camera';
 import { World } from './world';
-import { CollisionHandler } from './collisionHandler';
 import { Position } from './camera';
 import { SpriteAtlas } from './spriteAtlas';
 import { WeatherState, WeatherSystem } from './weather/weatherSystem';
 import { GameControls } from './gameControls';
 import { DifficultyManager } from './difficultyManager';
+import { CollisionSystem } from './collision/CollisionSystem';
+import { ICollidable } from './collision/ICollidable';
 
 // Interface for objects that can be rendered with depth sorting
 export interface RenderableObject {
@@ -37,9 +38,8 @@ export class Game {
   weatherSystem: WeatherSystem;
   difficultyManager: DifficultyManager; // Add the difficulty manager
   private weatherState: WeatherState = WeatherState.CLEAR;
-
   player: Player;
-  obstacleManager: ObstacleManager;
+  entityManager: EntityManager; // Renamed from obstacleManager to entityManager
 
   private isPaused: boolean = false;
   private gameState: GameState = GameState.PLAYING; // Default state
@@ -50,13 +50,12 @@ export class Game {
   private assetsLoaded: boolean = false;
   private assetsLoadingFailed: boolean = false;
   skiTrack: SkiTrack;
-
   public debug: boolean = false;
   backgroundY: number = 0;
   backgroundX: number = 0;
   camera: Camera;
   world: World;
-  private collisionHandler: CollisionHandler;
+  private collisionSystem: CollisionSystem; // Only the new collision system
   spriteAtlases: Map<string, SpriteAtlas> = new Map();
 
   // Game controls instance
@@ -70,14 +69,12 @@ export class Game {
     this.world = new World(this.p, this.camera, this);
 
     // Position player at the top middle of the screen, facing down
-    this.player = new Player(this.p, { x: 0, y: 0 }, this);
-
-    // Create the difficulty manager
+    this.player = new Player(this.p, { x: 0, y: 0 }, this);    // Create the difficulty manager
     this.difficultyManager = new DifficultyManager(this);
-
-    this.obstacleManager = new ObstacleManager(this.p, this);
+    
+    this.entityManager = new EntityManager(this.p, this);
     this.skiTrack = new SkiTrack(this);
-    this.collisionHandler = new CollisionHandler(this);
+    this.collisionSystem = new CollisionSystem(this); // Initialize only the new collision system
     this.weatherSystem = new WeatherSystem(this.p, this);
 
     // Initialize game controls
@@ -134,22 +131,26 @@ export class Game {
       this.weatherSystem.update();
 
       // Update camera to follow player
-      this.camera.update();
-
-      // Update world entities
+      this.camera.update();      // Update world entities
       this.world.update();
 
-      // Update obstacles
-      this.obstacleManager.update(this);
+      // Update all game entities (obstacles and AI skiers)
+      this.entityManager.update(this);
 
-      // handle collisions
-      this.collisionHandler.update(this.player, this.obstacleManager.obstacles);
+      // Use the new collision system
+      // Collect all collidable objects into a single array
+      const collidables: ICollidable[] = [
+        this.player, 
+        ...this.entityManager.getAllEntities()
+      ];
+      
+      // Process collisions using the system
+      this.collisionSystem.update(collidables);
     }
   }
-
   public toggleDebug(): void {
     this.debug = !this.debug;
-    this.obstacleManager.toggleDebug();
+    this.entityManager.toggleDebug();
     this.player.toggleDebug();
     console.debug(`Debug mode: ${this.debug ? 'ON' : 'OFF'}`);
   }
@@ -181,14 +182,13 @@ export class Game {
     // Show pause indicator
     if (this.isPaused) {
       this.renderPauseIndicator();
-    }
-
-    // Show debug info for obstacles
+    }    // Show debug info for obstacles
     if (this.debug) {
       this.p.fill(255);
       this.p.textSize(12);
       this.p.textAlign(this.p.LEFT, this.p.TOP);
-      this.p.text(`Obstacles: ${this.obstacleManager.obstacles.length}`, 10, 10);
+      this.p.text(`Obstacles: ${this.entityManager.getObstacleCount()}`, 10, 10);
+      this.p.text(`AI Skiers: ${this.entityManager.getAISkierCount()}`, 10, 30);
       this.p.text(`Weather: ${WeatherState[this.weatherSystem.getCurrentWeatherState()]}`, 10, 290);
       this.p.text(`Visibility: ${(100 - this.weatherSystem.getVisibilityFactor() * 100).toFixed(0)}%`, 10, 310);
 
@@ -199,45 +199,13 @@ export class Game {
     // Display controls information
     this.renderControlsInfo();
   }
-
   private renderDynamicObjects(): void {
-    // Collect all renderable objects for depth sorting
-    const renderableObjects: RenderableObject[] = [];
-
-    // Add player to the renderable objects
-    renderableObjects.push(this.player);
-
-    // Add obstacles to the renderable objects
-    this.obstacleManager.obstacles.forEach(obstacle => {
-      renderableObjects.push(obstacle);
-    });
-
-    // Sort objects by their ground position (base Y position) rather than center
-    renderableObjects.sort((a, b) => {
-      // Calculate base positions for both objects
-      // For objects without height property, default to using their center position
-      const aBaseY = a.worldPos.y + (a.height ? a.height / 2 : 0);
-      const bBaseY = b.worldPos.y + (b.height ? b.height / 2 : 0);
-
-      // Sort by base Y position (smaller Y values first = further away)
-      return aBaseY - bBaseY;
-    });
-
-    // Render objects in Y-order
-    for (const object of renderableObjects) {
-      if (object === this.player) {
-        this.player.render();
-      } else {
-        // It's an obstacle
-        const obstacle = object as Obstacle;
-        obstacle.render(this.p, this);
-
-        // If debug mode is enabled, draw the collision boxes for obstacles
-        if (this.debug) {
-          this.obstacleManager.renderObstacleDebugHitbox(obstacle);
-        }
-      }
-    }
+    // First render the entities using the entity manager's render method
+    // This handles depth sorting internally for all static obstacles and AI skiers
+    this.entityManager.render(this.p, this);
+    
+    // Then render the player on top
+    this.player.render(this.p, this);
   }
 
   private renderLoadingScreen(): void {
@@ -347,7 +315,7 @@ export class Game {
     this.player = new Player(this.p, { x: 0, y: 0 }, this);
 
     // Create a new obstacle manager which will load its own assets
-    this.obstacleManager = new ObstacleManager(this.p, this);
+    // this.obstacleManager = new ObstacleManager(this.p, this);
 
     // Reset ski tracks
     this.skiTrack = new SkiTrack(this);

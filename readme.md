@@ -5,11 +5,15 @@ The game area should scroll itself and player controls the character to left and
 Can also increase their speed by pressing down
 
 # BUGS
+- We should fix Obstacle interface, it should be a class
+  or not exists at all, it could be an interface instead and each creation of an actual obstacle, could be the tree, snowman or rock, could be sharing the logic....
+  Take a look at entityManager.ts:293
 - UI Text is blurry
 - wrong color of jacket on skier 2
 - wrong color on hat and jacket on skier 3
 
 # TODO
+- switch to use shaders and webGL
 - fix the little face in the corner that can react to things happening in the game
   - need to generate the faces
     - idle
