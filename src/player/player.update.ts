@@ -15,7 +15,7 @@ export class PlayerUpdate {
     private stateTransitionDelay: number = 10; // Frames to wait before allowing another state change
     
     // Movement properties
-    private maxPlayerMovement: number = 4;
+    private maxPlayerMovement: number = 4; // Base value, now will be modified by difficulty
     private collisionCount: number = 0;
     
     // Visual transition properties
@@ -74,6 +74,9 @@ export class PlayerUpdate {
     }
 
     private updateMovement(): void {
+        // Get current speed from difficulty manager
+        const difficultySpeed = this.playerData.game.difficultyManager.getPlayerSpeed();
+        
         // Calculate movement speed (faster when flying)
         const speedMultiplier = this.isFlying() ? 2.0 : 1.0;
         
@@ -97,7 +100,8 @@ export class PlayerUpdate {
                 weatherControlDifficulty = 0;
         }
         
-        const baseSpeed = this.maxPlayerMovement * speedMultiplier;
+        // Use the difficulty-based speed instead of the fixed maxPlayerMovement
+        const baseSpeed = difficultySpeed * speedMultiplier;
         
         // Random sideways movement in worse weather conditions
         if (weatherControlDifficulty > 0) {

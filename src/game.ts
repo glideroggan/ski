@@ -9,6 +9,7 @@ import { Position } from './camera';
 import { SpriteAtlas } from './spriteAtlas';
 import { WeatherState, WeatherSystem } from './weather/weatherSystem';
 import { GameControls } from './gameControls';
+import { DifficultyManager } from './difficultyManager';
 
 // Interface for objects that can be rendered with depth sorting
 export interface RenderableObject {
@@ -34,6 +35,7 @@ export interface Touch {
 export class Game {
   private p: p5;
   weatherSystem: WeatherSystem;
+  difficultyManager: DifficultyManager; // Add the difficulty manager
   private weatherState: WeatherState = WeatherState.CLEAR;
 
   player: Player;
@@ -69,6 +71,9 @@ export class Game {
 
     // Position player at the top middle of the screen, facing down
     this.player = new Player(this.p, { x: 0, y: 0 }, this);
+    
+    // Create the difficulty manager
+    this.difficultyManager = new DifficultyManager(this);
 
     this.obstacleManager = new ObstacleManager(this.p, this);
     this.skiTrack = new SkiTrack(this);
@@ -119,6 +124,9 @@ export class Game {
 
     // Only update game elements if the game is not paused
     if (!this.isPaused) {
+      // Update the difficulty manager
+      this.difficultyManager.update();
+      
       // Update player entity
       this.player.update();
 
@@ -183,6 +191,9 @@ export class Game {
       this.p.text(`Obstacles: ${this.obstacleManager.obstacles.length}`, 10, 10);
       this.p.text(`Weather: ${WeatherState[this.weatherSystem.getCurrentWeatherState()]}`, 10, 290);
       this.p.text(`Visibility: ${(100 - this.weatherSystem.getVisibilityFactor() * 100).toFixed(0)}%`, 10, 310);
+      
+      // Remove duplicate difficulty info from debug display
+      // We'll keep it in the dedicated difficulty indicator only
     }
 
     // Display controls information
@@ -254,40 +265,56 @@ export class Game {
     this.p.fill(255);
     this.p.textSize(12);
     this.p.textAlign(this.p.RIGHT, this.p.BOTTOM);
-    this.p.text("LEFT/RIGHT: Turn | SPACE: Pause | D: Debug Mode", this.p.width - 10, this.p.height - 10);
+    this.p.text("LEFT/RIGHT: Turn | SPACE: Pause | +/-: Adjust Difficulty | D: Debug Mode", this.p.width - 10, this.p.height - 10);
+    
+    // Always show difficulty level even when not in debug mode
+    this.renderDifficultyIndicator();
+  }
 
-    // In debug mode, show more information
-    if (this.debug) {
-      this.p.textAlign(this.p.LEFT, this.p.TOP);
-      this.p.fill(255, 255, 0);
-      this.p.text("DEBUG MODE", 10, 30);
-      this.p.text(`Player position: (${Math.round(this.player.worldPos.x)}, ${Math.round(this.player.worldPos.y)})`, 10, 50);
-      this.p.text(`Player state: ${PlayerState[this.player.getCurrentState()]}`, 10, 70);
-
-      // Add collision count and special states
-      if (this.player.isFlying()) {
-        this.p.fill(255, 0, 255); // Purple for flying
-        this.p.text("FLYING!", 10, 90);
-      } else if (this.player.isCrashed()) {
-        this.p.fill(255, 0, 0); // Red for crashed
-        this.p.text("CRASHED!", 10, 90);
-      } else {
-        this.p.fill(255, 255, 0);
-        this.p.text(`Collision: ${this.player.isInCollisionState() ? 'YES' : 'NO'}`, 10, 90);
-      }
-
-      // Get terrain info at player position for debug display
-      if (this.world && this.player) {
-        const playerPos = this.player.worldPos;
-        const terrainHeight = this.world.getHeightAtPosition(playerPos);
-        const slope = this.world.getSlopeAtPosition(playerPos);
-
-        this.p.fill(0, 255, 255); // Cyan for terrain info
-        this.p.text(`Terrain bumpiness: ${terrainHeight.toFixed(3)}`, 10, 110);
-        this.p.text(`Terrain slope: ${(slope.angle * 180 / Math.PI).toFixed(1)}°`, 10, 130);
-        this.p.text(`Rotation effect: ${(this.player.getCurrentRotation() * 180 / Math.PI).toFixed(1)}°`, 10, 150);
-      }
-    }
+  private renderDifficultyIndicator(): void {
+    // Get both base and effective difficulty levels
+    const baseDifficulty = this.difficultyManager.getBaseDifficultyLevel();
+    const effectiveDifficulty = this.difficultyManager.getDifficultyLevel();
+    const sectionName = this.difficultyManager.getCurrentSectionName();
+    
+    // this.p.push();
+    
+    // Force text to render at integer pixel positions
+    this.p.textAlign(this.p.LEFT, this.p.TOP);
+    this.p.textSize(12);
+    
+    // Ensure container rect is at integer pixel position
+    const boxX = Math.floor(this.p.width - 210);
+    const boxY = 10;
+    const boxWidth = 200;
+    const boxHeight = 80;
+    
+    // Make background fully opaque to test if transparency is causing blur
+    this.p.fill(0, 128); // Completely opaque black background
+    this.p.rect(boxX, boxY, boxWidth, boxHeight, 5);
+    
+    // Draw difficulty label and values at integer positions
+    this.p.fill(255);
+    this.p.text(`Difficulty: ${effectiveDifficulty}% (Base: ${baseDifficulty}%)`, Math.floor(boxX + 10), boxY + 15);
+    this.p.text(`Terrain: ${sectionName}`, Math.floor(boxX + 10), boxY + 35);
+    
+    // Draw weather indicator
+    const weatherState = this.weatherSystem.getCurrentWeatherState();
+    this.p.text(`Weather: ${WeatherState[weatherState]}`, Math.floor(boxX + 10), boxY + 55);
+    
+    // Draw difficulty bar
+    this.p.fill(100, 100, 100);
+    this.p.rect(Math.floor(boxX + 10), boxY + 30, 180, 5);
+    
+    // Draw filled portion of difficulty bar
+    // Color changes based on difficulty: green (low) to yellow (medium) to red (high)
+    const r = this.p.map(effectiveDifficulty, 0, 100, 0, 255);
+    const g = this.p.map(effectiveDifficulty, 0, 50, 255, 255) - this.p.map(effectiveDifficulty, 50, 100, 0, 255);
+    const b = 0;
+    this.p.fill(r, g, b);
+    this.p.rect(Math.floor(boxX + 10), boxY + 30, effectiveDifficulty * 1.8, 5);
+    
+    // this.p.pop();
   }
 
   // Show pause indicator
@@ -320,6 +347,9 @@ export class Game {
 
     // Reset ski tracks
     this.skiTrack = new SkiTrack(this);
+
+    // Create a new difficulty manager
+    this.difficultyManager = new DifficultyManager(this);
 
     // Reset game state
     this.gameState = GameState.PLAYING;

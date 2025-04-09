@@ -22,9 +22,14 @@ export class PlayerRenderer {
             return;
         }
 
+        // Create a flag to track if we've pushed the collision effect state
+        let collisionEffectPushed = false;
+        
         // Apply visual effect if collision is active
         if (this.playerData.collisionEffect > 0) {
             this.playerData.p.push();
+            collisionEffectPushed = true;
+            
             if (this.playerData.collisionEffect % 4 < 2) { // Flashing effect
                 this.playerData.p.tint(255, 100, 100); // Red tint
             }
@@ -64,7 +69,8 @@ export class PlayerRenderer {
         
         this.playerData.p.pop();
 
-        if (this.playerData.collisionEffect > 0) {
+        // Only pop if we pushed for collision effect
+        if (collisionEffectPushed) {
             this.playerData.p.pop(); // Restore drawing state (for collision effect)
         }
 

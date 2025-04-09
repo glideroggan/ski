@@ -1,5 +1,5 @@
 import p5 from 'p5';
-import { Game } from './game';
+import { Game, Touch } from './game';
 import { InputHandler } from './inputHandler';
 import { WeatherState } from './weather/weatherSystem';
 
@@ -8,174 +8,129 @@ import { WeatherState } from './weather/weatherSystem';
  * It separates input handling from game logic to improve organization
  */
 export class GameControls {
-  private p: p5;
-  private game: Game;
-  private inputHandler: InputHandler;
+    private p: p5;
+    private game: Game;
+    private inputHandler: InputHandler;
 
-  // For handling key press states
-  private leftKeyPressed: boolean = false;
-  private rightKeyPressed: boolean = false;
-  private downKeyPressed: boolean = false;
-  private debugKeyPressed: boolean = false;
-  private spaceKeyPressed: boolean = false;
+    // Key mapping flags
+    private leftKey: boolean = false;
+    private rightKey: boolean = false;
+    private downKey: boolean = false;
 
-  constructor(p: p5, game: Game) {
-    this.p = p;
-    this.game = game;
-    this.inputHandler = new InputHandler();
-    
-    // Setup the event handlers
-    this.setupKeyboardControls();
-  }
+    // Touch input tracking
+    private activeTouches: Map<number, Touch> = new Map();
 
-  /**
-   * Update method called every frame to check for continuous input
-   */
-  public update(): void {
-    // Check for continuous input and state changes
-    this.handleContinuousInput();
-  }
+    // For handling key press states
+    private debugKeyPressed: boolean = false;
+    private spaceKeyPressed: boolean = false;
 
-  /**
-   * Handles continuous input checks that need to be evaluated every frame
-   * This includes state-based input and key-hold detection
-   */
-  private handleContinuousInput(): void {
-    // Check for pause toggle with spacebar
-    if (this.inputHandler.isKeyDown(' ') && !this.spaceKeyPressed) {
-      this.spaceKeyPressed = true;
-      this.game.togglePause();
-    } 
-    else if (!this.inputHandler.isKeyDown(' ') && this.spaceKeyPressed) {
-      this.spaceKeyPressed = false;
-    }
-    
-    // For continuous turning based on key being held down, uncomment these lines:
-    // if (this.inputHandler.isKeyDown(undefined, this.p.LEFT_ARROW)) {
-    //   this.game.player.turnLeft();
-    // } else if (this.inputHandler.isKeyDown(undefined, this.p.RIGHT_ARROW)) {
-    //   this.game.player.turnRight();
-    // }
-    
-    // LEFT arrow key (discrete press handling)
-    if (this.inputHandler.isKeyDown(undefined, this.p.LEFT_ARROW) && !this.leftKeyPressed) {
-      this.leftKeyPressed = true;
-      this.game.player.turnLeft();
-    }
-    else if (!this.inputHandler.isKeyDown(undefined, this.p.LEFT_ARROW) && this.leftKeyPressed) {
-      this.leftKeyPressed = false;
+    constructor(p: p5, game: Game) {
+        this.p = p;
+        this.game = game;
+        this.inputHandler = new InputHandler();
+
+        // Handle keyboard input
+        this.p.keyPressed = this.handleKeyPressed.bind(this);
+        this.p.keyReleased = this.handleKeyReleased.bind(this);
+
+        // Handle touch input
+        // if (this.p.touchStarted) this.p.touchStarted = this.handleTouchStart.bind(this);
+        // if (this.p.touchMoved) this.p.touchMoved = this.handleTouchMove.bind(this);
+        // if (this.p.touchEnded) this.p.touchEnded = this.handleTouchEnd.bind(this);
     }
 
-    // RIGHT arrow key (discrete press handling)
-    if (this.inputHandler.isKeyDown(undefined, this.p.RIGHT_ARROW) && !this.rightKeyPressed) {
-      this.rightKeyPressed = true;
-      this.game.player.turnRight();
-    }
-    else if (!this.inputHandler.isKeyDown(undefined, this.p.RIGHT_ARROW) && this.rightKeyPressed) {
-      this.rightKeyPressed = false;
+    /**
+     * Update method called every frame to check for continuous input
+     */
+    public update(): void {
+        // Handle continuous key input for movement
+        if (this.leftKey) {
+            this.game.player.turnLeft();
+        }
+
+        if (this.rightKey) {
+            this.game.player.turnRight();
+        }
+
+        // Handle touch input for movement
+        if (this.activeTouches.size > 0) {
+            // Simple touch controls - touches on left half of screen turn left, 
+            // touches on right half turn right
+            const screenMiddle = this.p.width / 2;
+
+            for (const touch of this.activeTouches.values()) {
+                if (touch.x < screenMiddle - 20) { // Add a small deadzone in the middle
+                    this.game.player.turnLeft();
+                } else if (touch.x > screenMiddle + 20) {
+                    this.game.player.turnRight();
+                }
+            }
+        }
     }
 
-    // 'D' key for debug mode (keyCode 68)
-    if (this.inputHandler.isKeyDown('d') || this.inputHandler.isKeyDown('D')) {
-      if (!this.debugKeyPressed) {
-        this.debugKeyPressed = true;
-        this.game.toggleDebug();
-      }
-    } else {
-      this.debugKeyPressed = false;
-    }
-  }
+    private handleKeyPressed(): any {
+        // Store key state
+        if (this.p.keyCode === this.p.LEFT_ARROW) {
+            this.leftKey = true;
+        } else if (this.p.keyCode === this.p.RIGHT_ARROW) {
+            this.rightKey = true;
+        } else if (this.p.keyCode === this.p.DOWN_ARROW) {
+            this.downKey = true;
+        }
 
-  /**
-   * Sets up event-based keyboard controls
-   */
-  private setupKeyboardControls(): void {
-    this.p.keyPressed = () => {
-      // Handle key presses - these are one-time events
-      this.handleKeyPressed(this.p.keyCode, this.p.key);
-    };
-    
-    // Handle key releases
-    this.p.keyReleased = () => {
-      this.handleKeyReleased(this.p.keyCode, this.p.key);
-    };
-  }
+        // One-time key actions
+        if (this.p.keyCode === 32) { // SPACE for pause
+            this.game.togglePause();
+        } else if (this.p.key === 'd' || this.p.key === 'D') {
+            this.game.toggleDebug();
+        }
 
-  /**
-   * Handles key press events
-   */
-  private handleKeyPressed(keyCode: number, key: string): void {
-    this.inputHandler.setKeyDown(keyCode, key);
-    this.handleKeyAction(key, keyCode);
-  }
+        // Difficulty control keys
+        else if (this.p.key === '+' || this.p.key === '=') {
+            // Increase difficulty
+            this.game.difficultyManager.increaseDifficulty(10);
+            console.debug(`Difficulty increased to ${this.game.difficultyManager.getDifficultyLevel()}%`);
+        } else if (this.p.key === '-' || this.p.key === '_') {
+            // Decrease difficulty
+            this.game.difficultyManager.decreaseDifficulty(10);
+            console.debug(`Difficulty decreased to ${this.game.difficultyManager.getDifficultyLevel()}%`);
+        }
 
-  /**
-   * Handles key release events
-   */
-  private handleKeyReleased(keyCode: number, key: string): void {
-    this.inputHandler.setKeyUp(keyCode, key);
-  }
+        // Weather control keys (for testing)
+        else if (this.p.key === '1') {
+            this.game.weatherSystem.setWeatherState(WeatherState.CLEAR);
+            console.debug("Weather set to CLEAR");
+        } else if (this.p.key === '2') {
+            this.game.weatherSystem.setWeatherState(WeatherState.LIGHT_SNOW);
+            console.debug("Weather set to LIGHT_SNOW");
+        } else if (this.p.key === '3') {
+            this.game.weatherSystem.setWeatherState(WeatherState.HEAVY_SNOW);
+            console.debug("Weather set to HEAVY_SNOW");
+        } else if (this.p.key === '4') {
+            this.game.weatherSystem.setWeatherState(WeatherState.BLIZZARD);
+            console.debug("Weather set to BLIZZARD");
+        }
 
-  /**
-   * Handles specific actions in response to key presses
-   * This method centralizes all key-based actions in one place
-   */
-  private handleKeyAction(key: string, keyCode: number): void {
-    // Debug-only actions
-    if (this.game.debug) {
-      switch (key) {
-        case 'm':
-        case 'M':
-          this.game.world.toggleDebugHeightmap();
-          console.debug("Toggled heightmap visualization");
-          break;
-        case 'w':
-        case 'W':
-          this.cycleWeatherState();
-          break;
-        case 'b':
-        case 'B':
-          this.game.weatherSystem.setWeatherState(WeatherState.BLIZZARD, true);
-          console.debug("Sudden blizzard triggered!");
-          break;
-        case 'r':
-        case 'R':
-          this.game.resetGame();
-          console.debug("Game reset by user");
-          break;
-      }
+        // Turn off default behaviors for arrow keys and space bar
+        if (
+            this.p.keyCode === this.p.LEFT_ARROW ||
+            this.p.keyCode === this.p.RIGHT_ARROW ||
+            this.p.keyCode === this.p.DOWN_ARROW ||
+            this.p.keyCode === 32  // space bar
+        ) {
+            return false;  // prevent default
+        }
     }
-    
-    // Movement controls - for keys that should trigger on press rather than state
-    switch (keyCode) {
-      case this.p.LEFT_ARROW:
-        this.game.player.turnLeft();
-        break;
-      case this.p.RIGHT_ARROW:
-        this.game.player.turnRight();
-        break;
+
+    private handleKeyReleased(): void {
+        if (this.p.keyCode === this.p.LEFT_ARROW) {
+            this.leftKey = false;
+        } else if (this.p.keyCode === this.p.RIGHT_ARROW) {
+            this.rightKey = false;
+        } else if (this.p.keyCode === this.p.DOWN_ARROW) {
+            this.downKey = false;
+        }
     }
-  }
-  
-  /**
-   * Cycles through weather states for testing
-   * This is extracted to a separate method to avoid duplicating logic
-   */
-  private cycleWeatherState(): void {
-    switch (this.game.weatherSystem.getCurrentWeatherState()) {
-      case WeatherState.CLEAR:
-        this.game.weatherSystem.setWeatherState(WeatherState.LIGHT_SNOW);
-        break;
-      case WeatherState.LIGHT_SNOW:
-        this.game.weatherSystem.setWeatherState(WeatherState.HEAVY_SNOW);
-        break;
-      case WeatherState.HEAVY_SNOW:
-        this.game.weatherSystem.setWeatherState(WeatherState.BLIZZARD);
-        break;
-      case WeatherState.BLIZZARD:
-        this.game.weatherSystem.setWeatherState(WeatherState.CLEAR);
-        break;
-    }
-    console.debug("Weather state changed to:", WeatherState[this.game.weatherSystem.getCurrentWeatherState()]);
-  }
+
+    // NOTE: ignore touch based input for now, as we can take that later
 }
