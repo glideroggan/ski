@@ -65,13 +65,13 @@ export class Game {
   constructor(p: p5) {
     this.p = p;
     this.loadAssets();
-    
+
     this.camera = new Camera(this.p, this);
     this.world = new World(this.p, this.camera, this);
 
     // Position player at the top middle of the screen, facing down
     this.player = new Player(this.p, { x: 0, y: 0 }, this);
-    
+
     // Create the difficulty manager
     this.difficultyManager = new DifficultyManager(this);
 
@@ -79,10 +79,10 @@ export class Game {
     this.skiTrack = new SkiTrack(this);
     this.collisionHandler = new CollisionHandler(this);
     this.weatherSystem = new WeatherSystem(this.p, this);
-    
+
     // Initialize game controls
     this.gameControls = new GameControls(this.p, this);
-    
+
     console.debug("Game initialized. Press 'D' to toggle debug mode");
   }
 
@@ -126,7 +126,7 @@ export class Game {
     if (!this.isPaused) {
       // Update the difficulty manager
       this.difficultyManager.update();
-      
+
       // Update player entity
       this.player.update();
 
@@ -191,7 +191,7 @@ export class Game {
       this.p.text(`Obstacles: ${this.obstacleManager.obstacles.length}`, 10, 10);
       this.p.text(`Weather: ${WeatherState[this.weatherSystem.getCurrentWeatherState()]}`, 10, 290);
       this.p.text(`Visibility: ${(100 - this.weatherSystem.getVisibilityFactor() * 100).toFixed(0)}%`, 10, 310);
-      
+
       // Remove duplicate difficulty info from debug display
       // We'll keep it in the dedicated difficulty indicator only
     }
@@ -266,49 +266,59 @@ export class Game {
     this.p.textSize(12);
     this.p.textAlign(this.p.RIGHT, this.p.BOTTOM);
     this.p.text("LEFT/RIGHT: Turn | UP/DOWN: Adjust Speed | SPACE: Pause | D: Debug Mode", this.p.width - 10, this.p.height - 10);
-    
+
     // Always show difficulty level even when not in debug mode
     this.renderDifficultyIndicator();
   }
+
   private renderDifficultyIndicator(): void {
     // Get trail progress and current section
     const trailProgress = this.difficultyManager.getTrailProgress();
     const sectionName = this.difficultyManager.getCurrentSectionName();
-    
+
+    // Save the current transformation state
+    // this.p.push();
+
+    // Reset any translations that might be in effect
+    // this.p.resetMatrix();
+
     // Force text to render at integer pixel positions
     this.p.textAlign(this.p.LEFT, this.p.TOP);
     this.p.textSize(12);
-    
+
     // Ensure container rect is at integer pixel position
     const boxX = Math.floor(this.p.width - 210);
-    const boxY = 10;
+    const boxY = Math.floor(10);
     const boxWidth = 200;
     const boxHeight = 80;
-    
+
     // Make background semi-transparent black
     this.p.fill(0, 128);
     this.p.rect(boxX, boxY, boxWidth, boxHeight, 5);
-    
+
     // Draw trail progress label and values at integer positions
     this.p.fill(255);
-    this.p.text(`Trail Progress: ${trailProgress}%`, Math.floor(boxX + 10), boxY + 15);
-    this.p.text(`Terrain: ${sectionName}`, Math.floor(boxX + 10), boxY + 35);
-    
+    this.p.text(`Trail Progress: ${trailProgress}%`, Math.floor(boxX + 10), Math.floor(boxY + 15));
+    this.p.text(`Terrain: ${sectionName}`, Math.floor(boxX + 10), Math.floor(boxY + 35));
+
     // Draw weather indicator
     const weatherState = this.weatherSystem.getCurrentWeatherState();
-    this.p.text(`Weather: ${WeatherState[weatherState]}`, Math.floor(boxX + 10), boxY + 55);
-    
+    this.p.text(`Weather: ${WeatherState[weatherState]}`, Math.floor(boxX + 10), Math.floor(boxY + 55));
+
     // Draw progress bar background
     this.p.fill(100, 100, 100);
-    this.p.rect(Math.floor(boxX + 10), boxY + 30, 180, 5);
-    
+    this.p.rect(Math.floor(boxX + 10), Math.floor(boxY + 30), 180, 5);
+
     // Draw filled portion of progress bar
     // Color changes based on progress: green (start) to blue (middle) to purple (finish)
     const r = this.p.map(trailProgress, 0, 100, 50, 180);
     const g = this.p.map(trailProgress, 0, 50, 200, 100);
     const b = this.p.map(trailProgress, 0, 100, 50, 255);
     this.p.fill(r, g, b);
-    this.p.rect(Math.floor(boxX + 10), boxY + 30, trailProgress * 1.8, 5);
+    this.p.rect(Math.floor(boxX + 10), Math.floor(boxY + 30), Math.floor(trailProgress * 1.8), 5);
+
+    // Restore the previous transformation state
+    // this.p.pop();
   }
 
   // Show pause indicator

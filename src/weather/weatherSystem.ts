@@ -17,25 +17,25 @@ export class WeatherSystem {
   private transitionProgress: number = 0;
   private transitionSpeed: number = 0.005; // How quickly weather changes
   private suddenTransition: boolean = false;
-  
+
   // Weather effects
   private particles: SnowParticle[] = [];
   private visibilityOverlay: number = 0; // 0-255 for transparency
   private shakeIntensity: number = 0;
   private windDirection: number = 0; // -1 to 1, influences particle movement
   private windIntensity: number = 0;
-  
+
   // Weather timing
   private weatherTimer: number = 0;
   private weatherDuration: number = 1800; // 30 seconds at 60fps
   private minClearDuration: number = 600; // Minimum time between weather events
-  
+
   constructor(p: p5, game: Game) {
     this.p = p;
     this.game = game;
     this.initializeParticles();
   }
-  
+
   private initializeParticles(): void {
     // Create a pool of particles that will be reused
     const maxParticles = 300; // Maximum for blizzard
@@ -44,11 +44,11 @@ export class WeatherSystem {
       this.particles.push(particle);
     }
   }
-  
+
   public update(): void {
     // Update weather state transitions
     this.updateWeatherState();
-    
+
     // Update active particles based on current state
     const activeParticleCount = this.getActiveParticleCount();
     for (let i = 0; i < this.particles.length; i++) {
@@ -59,11 +59,11 @@ export class WeatherSystem {
         this.particles[i].active = false;
       }
     }
-    
+
     // Update weather timer and possibly change weather
     this.updateWeatherTimer();
   }
-  
+
   private getActiveParticleCount(): number {
     switch (this.currentState) {
       case WeatherState.CLEAR:
@@ -87,19 +87,19 @@ export class WeatherSystem {
       } else {
         this.transitionProgress = Math.min(1, this.transitionProgress + this.transitionSpeed);
       }
-      
+
       // When transition completes, update current state
       if (this.transitionProgress >= 1) {
         this.currentState = this.targetState;
         this.transitionProgress = 0;
         this.suddenTransition = false;
       }
-      
+
       // Update visual effects based on transition
       this.updateVisualEffects();
     }
   }
-    private updateVisualEffects(): void {
+  private updateVisualEffects(): void {
     // Calculate overlay opacity based on state and transition
     let targetOpacity = 0;
     switch (this.targetState) {
@@ -108,7 +108,7 @@ export class WeatherSystem {
       case WeatherState.HEAVY_SNOW: targetOpacity = 100; break;
       case WeatherState.BLIZZARD: targetOpacity = 180; break;
     }
-    
+
     let currentOpacity = 0;
     switch (this.currentState) {
       case WeatherState.CLEAR: currentOpacity = 0; break;
@@ -116,7 +116,7 @@ export class WeatherSystem {
       case WeatherState.HEAVY_SNOW: currentOpacity = 100; break;
       case WeatherState.BLIZZARD: currentOpacity = 180; break;
     }
-    
+
     // Blend between current and target opacity with a delay for fog effect
     // Fog should appear after the snow starts - wait until transition is 30% complete
     // before starting to fade in the fog
@@ -126,27 +126,27 @@ export class WeatherSystem {
       // Rescale the remaining 70% of the transition to be 0-100% for the fog
       fogTransitionProgress = (this.transitionProgress - fogDelay) / (1 - fogDelay);
     }
-    
+
     // Use the delayed fog progress for the visibility overlay
     this.visibilityOverlay = currentOpacity + (targetOpacity - currentOpacity) * fogTransitionProgress;
-    
+
     // Update shake intensity
     let targetShake = this.targetState === WeatherState.BLIZZARD ? 5 : 0;
     let currentShake = this.currentState === WeatherState.BLIZZARD ? 5 : 0;
     this.shakeIntensity = currentShake + (targetShake - currentShake) * this.transitionProgress;
-    
+
     // Update wind effects
-    const maxWind = this.targetState === WeatherState.BLIZZARD ? 1.0 : 
-                    this.targetState === WeatherState.HEAVY_SNOW ? 0.6 : 
-                    this.targetState === WeatherState.LIGHT_SNOW ? 0.3 : 0.1;
-                    
+    const maxWind = this.targetState === WeatherState.BLIZZARD ? 1.0 :
+      this.targetState === WeatherState.HEAVY_SNOW ? 0.6 :
+        this.targetState === WeatherState.LIGHT_SNOW ? 0.3 : 0.1;
+
     this.windDirection = Math.sin(this.p.frameCount * 0.01) * 0.5;
     this.windIntensity = maxWind;
   }
-  
+
   private updateWeatherTimer(): void {
     this.weatherTimer++;
-    
+
     // Check if we should change weather
     if (this.weatherTimer > this.weatherDuration) {
       if (this.currentState === WeatherState.CLEAR && this.weatherTimer > this.minClearDuration) {
@@ -166,14 +166,14 @@ export class WeatherSystem {
       }
     }
   }
-  
+
   public changeWeather(): void {
     // Get current difficulty level to influence weather selection
     const difficultyLevel = this.game.difficultyManager.getBaseDifficultyLevel();
-    
+
     // Choose weather state based on difficulty
     let newState: WeatherState;
-    
+
     if (difficultyLevel >= 85) {
       // At very high difficulty, high chance of blizzard
       newState = Math.random() < 0.7 ? WeatherState.BLIZZARD : WeatherState.HEAVY_SNOW;
@@ -194,20 +194,21 @@ export class WeatherSystem {
       // At low difficulty, mostly light snow
       newState = WeatherState.LIGHT_SNOW;
     }
-    
+
     // Determine if the change is sudden based on difficulty (more sudden at higher difficulty)
     const sudden = Math.random() < (0.1 + difficultyLevel / 100 * 0.3); // 10-40% chance
-    
+
     this.setWeatherState(newState, sudden);
     this.weatherTimer = 0;
-    
+
     // Weather duration is shorter at higher difficulties
     const maxDuration = Math.max(300, 1500 - (difficultyLevel * 10));
     this.weatherDuration = 300 + Math.random() * maxDuration;
-    
+
     console.debug(`Weather changing to: ${WeatherState[newState]}, sudden: ${sudden}, duration: ${this.weatherDuration.toFixed(0)} frames, difficulty: ${difficultyLevel.toFixed(0)}%`);
   }
-    public setWeatherState(state: WeatherState, sudden: boolean = false): void {
+
+  public setWeatherState(state: WeatherState, sudden: boolean = false): void {
     this.targetState = state;
     this.suddenTransition = sudden;
     if (sudden) {
@@ -219,10 +220,10 @@ export class WeatherSystem {
       this.transitionProgress = 0;
       this.transitionSpeed = 0.005; // Normal transition speed
     }
-    
+
     console.log(`Weather changing to: ${WeatherState[state]}, sudden: ${sudden}`);
   }
-  
+
   public render(): void {
     // Apply camera shake if needed
     if (this.shakeIntensity > 0) {
@@ -232,43 +233,43 @@ export class WeatherSystem {
         this.p.random(-this.shakeIntensity, this.shakeIntensity)
       );
     }
-    
+
     // Render snow particles
     for (const particle of this.particles) {
       if (particle.active) {
         particle.render();
       }
     }
-    
+
     if (this.shakeIntensity > 0) {
       this.p.pop();
     }
-    
+
     // Apply visibility overlay
     if (this.visibilityOverlay > 0) {
       this.renderVisibilityOverlay();
     }
   }
-  
+
   private renderVisibilityOverlay(): void {
     // Create gradient overlay that gets more opaque toward the bottom
     this.p.push();
     this.p.noStroke();
-    
+
     // Top to bottom linear gradient
     for (let y = 0; y < this.p.height; y += 20) {
       const alpha = this.visibilityOverlay * (y / this.p.height * 1.5);
       this.p.fill(255, 255, 255, alpha);
       this.p.rect(0, y, this.p.width, 20);
     }
-    
+
     this.p.pop();
   }
-  
+
   public getCurrentWeatherState(): WeatherState {
     return this.currentState;
   }
-  
+
   public getVisibilityFactor(): number {
     // Return a value from 0 to 1 representing how much visibility is reduced
     return this.visibilityOverlay / 255;

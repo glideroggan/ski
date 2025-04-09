@@ -54,12 +54,18 @@ const sketch = (p: p5) => {
     // Calculate initial canvas dimensions
     const { canvasWidth, canvasHeight } = calculateCanvasSize();
 
-    class CustomRenderer extends (p5.Renderer as any) {
-      constructor(elt: HTMLElement, pInst: p5, isMainCanvas: boolean) {
+    class CustomRenderer extends (p5.Renderer as any) {      constructor(elt: HTMLElement, pInst: p5, isMainCanvas: boolean) {
         super(elt, pInst, isMainCanvas);
         this.drawingContext = this.canvas.getContext("2d", {
           willReadFrequently: true,
+          alpha: true,
+          antialias: false,  // Disable antialiasing for sharper text
         });
+        
+        // Configure text rendering for crisp edges
+        this.drawingContext.textRendering = 'geometricPrecision';
+        this.drawingContext.imageSmoothingEnabled = false;
+        
         this._pInst._setProperty("drawingContext", this.drawingContext);
       }
     }
