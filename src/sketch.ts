@@ -1,6 +1,13 @@
 import p5 from 'p5';
 import { Game } from './game';
 
+// Extend p5 type definition to include drawingContext
+declare module 'p5' {
+  interface p5InstanceExtensions {
+    drawingContext: any;
+  }
+}
+
 // Create a new p5 instance
 const sketch = (p: p5) => {
   let game: Game;
@@ -46,6 +53,18 @@ const sketch = (p: p5) => {
   p.setup = () => {
     // Calculate initial canvas dimensions
     const { canvasWidth, canvasHeight } = calculateCanvasSize();
+
+    class CustomRenderer extends (p5.Renderer as any) {
+      constructor(elt: HTMLElement, pInst: p5, isMainCanvas: boolean) {
+        super(elt, pInst, isMainCanvas);
+        this.drawingContext = this.canvas.getContext("2d", {
+          willReadFrequently: true,
+        });
+        this._pInst._setProperty("drawingContext", this.drawingContext);
+      }
+    }
+
+    (p5 as any).Renderer = CustomRenderer;
     
     // Get the canvas container
     const gameContainer = document.getElementById('game-container');

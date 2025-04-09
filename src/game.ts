@@ -270,14 +270,10 @@ export class Game {
     // Always show difficulty level even when not in debug mode
     this.renderDifficultyIndicator();
   }
-
   private renderDifficultyIndicator(): void {
-    // Get both base and effective difficulty levels
-    const baseDifficulty = this.difficultyManager.getBaseDifficultyLevel();
-    const effectiveDifficulty = this.difficultyManager.getDifficultyLevel();
+    // Get trail progress and current section
+    const trailProgress = this.difficultyManager.getTrailProgress();
     const sectionName = this.difficultyManager.getCurrentSectionName();
-    
-    // this.p.push();
     
     // Force text to render at integer pixel positions
     this.p.textAlign(this.p.LEFT, this.p.TOP);
@@ -289,32 +285,30 @@ export class Game {
     const boxWidth = 200;
     const boxHeight = 80;
     
-    // Make background fully opaque to test if transparency is causing blur
-    this.p.fill(0, 128); // Completely opaque black background
+    // Make background semi-transparent black
+    this.p.fill(0, 128);
     this.p.rect(boxX, boxY, boxWidth, boxHeight, 5);
     
-    // Draw difficulty label and values at integer positions
+    // Draw trail progress label and values at integer positions
     this.p.fill(255);
-    this.p.text(`Difficulty: ${effectiveDifficulty}% (Base: ${baseDifficulty}%)`, Math.floor(boxX + 10), boxY + 15);
+    this.p.text(`Trail Progress: ${trailProgress}%`, Math.floor(boxX + 10), boxY + 15);
     this.p.text(`Terrain: ${sectionName}`, Math.floor(boxX + 10), boxY + 35);
     
     // Draw weather indicator
     const weatherState = this.weatherSystem.getCurrentWeatherState();
     this.p.text(`Weather: ${WeatherState[weatherState]}`, Math.floor(boxX + 10), boxY + 55);
     
-    // Draw difficulty bar
+    // Draw progress bar background
     this.p.fill(100, 100, 100);
     this.p.rect(Math.floor(boxX + 10), boxY + 30, 180, 5);
     
-    // Draw filled portion of difficulty bar
-    // Color changes based on difficulty: green (low) to yellow (medium) to red (high)
-    const r = this.p.map(effectiveDifficulty, 0, 100, 0, 255);
-    const g = this.p.map(effectiveDifficulty, 0, 50, 255, 255) - this.p.map(effectiveDifficulty, 50, 100, 0, 255);
-    const b = 0;
+    // Draw filled portion of progress bar
+    // Color changes based on progress: green (start) to blue (middle) to purple (finish)
+    const r = this.p.map(trailProgress, 0, 100, 50, 180);
+    const g = this.p.map(trailProgress, 0, 50, 200, 100);
+    const b = this.p.map(trailProgress, 0, 100, 50, 255);
     this.p.fill(r, g, b);
-    this.p.rect(Math.floor(boxX + 10), boxY + 30, effectiveDifficulty * 1.8, 5);
-    
-    // this.p.pop();
+    this.p.rect(Math.floor(boxX + 10), boxY + 30, trailProgress * 1.8, 5);
   }
 
   // Show pause indicator

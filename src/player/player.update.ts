@@ -74,9 +74,7 @@ export class PlayerUpdate {
 
         // Update terrain height and rotation
         this.updateTerrainEffects();
-    }
-
-    /**
+    }    /**
      * Update player speed with smooth transition
      */
     private updatePlayerSpeed(): void {
@@ -87,14 +85,25 @@ export class PlayerUpdate {
         // Ensure it's never below the base difficulty level
         const targetSpeed = Math.max(baseDifficultySpeed, baseDifficultySpeed + this.playerData.speedOffset);
         
+        // Apply collision effect to speed (reduce speed during collision, but not to a complete stop)
+        let actualTargetSpeed = targetSpeed;
+        if (this.playerData.collisionEffect > 0) {
+            // Apply a mild slowdown during collision effect (70% of normal speed)
+            // The higher the collision effect, the more slowdown
+            const collisionSlowdownFactor = 0.7 + (0.3 * (1 - this.playerData.collisionEffect / 45));
+            actualTargetSpeed = targetSpeed * collisionSlowdownFactor;
+        }
+        
         // Smoothly transition current speed towards target speed
-        if (this.playerData.currentSpeed !== targetSpeed) {
-            const diff = targetSpeed - this.playerData.currentSpeed;
-            this.playerData.currentSpeed += diff * this.playerData.speedTransitionFactor;
+        if (this.playerData.currentSpeed !== actualTargetSpeed) {
+            const diff = actualTargetSpeed - this.playerData.currentSpeed;
+            // Use faster transition when slowing down due to collision
+            const transitionFactor = this.playerData.collisionEffect > 0 ? 0.3 : this.playerData.speedTransitionFactor;
+            this.playerData.currentSpeed += diff * transitionFactor;
             
             // If very close to target, snap to it
             if (Math.abs(diff) < 0.01) {
-                this.playerData.currentSpeed = targetSpeed;
+                this.playerData.currentSpeed = actualTargetSpeed;
             }
         }
     }

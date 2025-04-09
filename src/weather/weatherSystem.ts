@@ -99,8 +99,7 @@ export class WeatherSystem {
       this.updateVisualEffects();
     }
   }
-  
-  private updateVisualEffects(): void {
+    private updateVisualEffects(): void {
     // Calculate overlay opacity based on state and transition
     let targetOpacity = 0;
     switch (this.targetState) {
@@ -118,8 +117,18 @@ export class WeatherSystem {
       case WeatherState.BLIZZARD: currentOpacity = 180; break;
     }
     
-    // Blend between current and target opacity
-    this.visibilityOverlay = currentOpacity + (targetOpacity - currentOpacity) * this.transitionProgress;
+    // Blend between current and target opacity with a delay for fog effect
+    // Fog should appear after the snow starts - wait until transition is 30% complete
+    // before starting to fade in the fog
+    const fogDelay = 0.3; // Start fog after snow is 30% in
+    let fogTransitionProgress = 0;
+    if (this.transitionProgress > fogDelay) {
+      // Rescale the remaining 70% of the transition to be 0-100% for the fog
+      fogTransitionProgress = (this.transitionProgress - fogDelay) / (1 - fogDelay);
+    }
+    
+    // Use the delayed fog progress for the visibility overlay
+    this.visibilityOverlay = currentOpacity + (targetOpacity - currentOpacity) * fogTransitionProgress;
     
     // Update shake intensity
     let targetShake = this.targetState === WeatherState.BLIZZARD ? 5 : 0;
@@ -198,15 +207,17 @@ export class WeatherSystem {
     
     console.debug(`Weather changing to: ${WeatherState[newState]}, sudden: ${sudden}, duration: ${this.weatherDuration.toFixed(0)} frames, difficulty: ${difficultyLevel.toFixed(0)}%`);
   }
-  
-  public setWeatherState(state: WeatherState, sudden: boolean = false): void {
+    public setWeatherState(state: WeatherState, sudden: boolean = false): void {
     this.targetState = state;
     this.suddenTransition = sudden;
     if (sudden) {
-      // For sudden transitions, skip most of the transition animation
-      this.transitionProgress = 0.8;
+      // For sudden transitions, speed up the transition but don't skip too much
+      // This ensures visual effects like fog have time to fade in smoothly
+      this.transitionProgress = 0.3; // Start at 30% progress instead of 80%
+      this.transitionSpeed = 0.02; // Faster transition speed for sudden changes
     } else {
       this.transitionProgress = 0;
+      this.transitionSpeed = 0.005; // Normal transition speed
     }
     
     console.log(`Weather changing to: ${WeatherState[state]}, sudden: ${sudden}`);

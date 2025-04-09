@@ -2,24 +2,30 @@ import { Game } from './game';
 import { WeatherState } from './weather/weatherSystem';
 
 /**
- * Manages game difficulty settings that affect various gameplay aspects:
+ * Manages trail progression and game settings that affect various gameplay aspects:
+ * - Trail progress tracking
  * - Player speed
  * - Obstacle density
  * - Weather conditions
  */
 export class DifficultyManager {
   private game: Game;
+    // Trail progress from 0 to 100
+  private trailProgress: number = 0; // Start at beginning of trail
+  private trailLength: number = 10000; // Arbitrary distance units for the trail
+  private trailCompleted: boolean = false;
+  private furthestYPosition: number = 0; // Track the player's furthest position down the slope
   
-  // Difficulty level from 0 to 100
+  // Difficulty level still used for game mechanics but not directly displayed
   private difficultyLevel: number = 50; // Start at medium difficulty
   private targetDifficultyLevel: number = 50; // Target difficulty level for smooth transitions
   private difficultyTransitionSpeed: number = 0.05; // How quickly difficulty changes (0-1)
   private minDifficultyLevel: number = 30; // Minimum allowed difficulty level
   
-  // For gradual difficulty increase over time
+  // For gradual difficulty increase over time (kept for game mechanics)
   private gameTimer: number = 0;
-  private difficultyIncreaseRate: number = 0.0002; // Reduced from 0.0005
-  private maxAutoDifficulty: number = 75; // Lowered from 85 to leave room for real difficulty
+  private difficultyIncreaseRate: number = 0.00005; // Very slow difficulty increase
+  private maxAutoDifficulty: number = 75; // Cap on auto-difficulty
   
   // Speed settings
   private baseSpeed: number = 4; // Default speed (same as the original maxPlayerMovement)
@@ -54,11 +60,33 @@ export class DifficultyManager {
     // Set initial section
     this.selectRandomSection();
   }
-  
   /**
    * Update difficulty manager state
    */
   public update(): void {
+    // Update trail progress based on player position
+    if (!this.trailCompleted && this.game.player) {
+      // Get current player Y position (how far down the slope they've gone)
+      const currentYPosition = this.game.player.worldPos.y;
+      
+      // Update furthest position reached (always keep the highest value)
+      if (currentYPosition > this.furthestYPosition) {
+        this.furthestYPosition = currentYPosition;
+        
+        // Calculate progress as a percentage of trail length
+        this.trailProgress = (this.furthestYPosition / this.trailLength) * 100;
+        
+        // Cap at 100% and mark as completed
+        if (this.trailProgress >= 100) {
+          this.trailProgress = 100;
+          this.trailCompleted = true;
+          console.debug("Trail completed!");
+          // Here you could trigger level completion events
+        }
+      }
+    }
+    
+    // Keep the difficulty mechanics for game systems (but separate from trail progression)
     // Smooth transition between current and target difficulty
     if (this.difficultyLevel !== this.targetDifficultyLevel) {
       // Gradually move current difficulty toward target
@@ -71,7 +99,7 @@ export class DifficultyManager {
       }
     }
     
-    // Gradual difficulty increase over time
+    // Gradual difficulty increase over time (kept for mechanics but not displayed)
     this.gameTimer++;
     const autoDifficultyIncrease = this.gameTimer * this.difficultyIncreaseRate;
     if (autoDifficultyIncrease < this.maxAutoDifficulty) {
@@ -94,6 +122,28 @@ export class DifficultyManager {
     if (Math.random() < 0.005) { // About once every 200 frames (~3.3 seconds at 60fps)
       this.syncWeatherWithDifficulty();
     }
+  }
+  
+  /**
+   * Get current trail progress (0-100%)
+   */
+  public getTrailProgress(): number {
+    return Math.round(this.trailProgress);
+  }
+  
+  /**
+   * Check if the trail has been completed
+   */
+  public isTrailCompleted(): boolean {
+    return this.trailCompleted;
+  }
+  
+  /**
+   * Reset trail progress to start a new trail
+   */
+  public resetTrailProgress(): void {
+    this.trailProgress = 0;
+    this.trailCompleted = false;
   }
   
   /**
@@ -218,28 +268,40 @@ export class DifficultyManager {
     // Start with the base difficulty level
     let effectiveDifficulty = this.difficultyLevel;
     
+    // For debugging - track contributions
+    const originalDifficulty = effectiveDifficulty;
+    
     // Add terrain section influence (±15%)
     const sectionBonus = this.getCurrentSectionDifficultyFactor();
     effectiveDifficulty += sectionBonus;
     
+    const afterSectionDifficulty = effectiveDifficulty;
+    
     // Add weather influence (0-20%)
     const weatherState = this.game.weatherSystem.getCurrentWeatherState();
+    let weatherBonus = 0;
+    
     switch (weatherState) {
       case WeatherState.BLIZZARD:
-        effectiveDifficulty += 20;
+        weatherBonus = 20;
         break;
       case WeatherState.HEAVY_SNOW:
-        effectiveDifficulty += 15;
+        weatherBonus = 15;
         break;
       case WeatherState.LIGHT_SNOW:
-        effectiveDifficulty += 7;
+        weatherBonus = 7;
         break;
       default:
         // No weather bonus for clear weather
+        weatherBonus = 0;
         break;
     }
-
+    
+    effectiveDifficulty += weatherBonus;
+    const afterWeatherDifficulty = effectiveDifficulty;
+    
     // Add player speed influence (if player exists and has speed data)
+    let speedBonus = 0;
     if (this.game.player) {
       const baseSpeed = this.getPlayerSpeed();
       const actualSpeed = this.game.player.getCurrentSpeed();
@@ -248,9 +310,22 @@ export class DifficultyManager {
       if (actualSpeed > baseSpeed) {
         const speedFactor = (actualSpeed - baseSpeed) / baseSpeed;
         // Add up to 30% extra difficulty based on player speed
-        const speedDifficultyBonus = Math.min(30, Math.round(speedFactor * 30));
-        effectiveDifficulty += speedDifficultyBonus;
+        speedBonus = Math.min(30, Math.round(speedFactor * 30));
+        effectiveDifficulty += speedBonus;
       }
+    }
+    
+    // Ensure combined factors don't push difficulty above 100
+    // If base difficulty is already 100, we should respect that as maximum
+    effectiveDifficulty = Math.min(Math.max(100, this.difficultyLevel), effectiveDifficulty);
+    
+    // Log debug info occasionally to avoid console spam
+    if (this.game.debug && Math.random() < 0.01) {
+      console.log(`Difficulty breakdown: Base=${originalDifficulty.toFixed(1)}, ` +
+                   `Section=${sectionBonus > 0 ? '+' : ''}${sectionBonus} (${this.getCurrentSectionName()}), ` +
+                   `Weather=${weatherBonus > 0 ? '+' : ''}${weatherBonus} (${WeatherState[weatherState]}), ` +
+                   `Speed=${speedBonus > 0 ? '+' : ''}${speedBonus}, ` +
+                   `Final=${Math.round(effectiveDifficulty)}`);
     }
     
     // Clamp to 0-100 range
