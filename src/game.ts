@@ -1,6 +1,5 @@
 import { Player, PlayerState } from './player/player';
 import { ObstacleManager, Obstacle } from './obstacleManager';
-import { InputHandler } from './inputHandler';
 import p5 from 'p5';
 import { SkiTrack } from './skiTrack';
 import { Camera } from './camera';
@@ -8,6 +7,8 @@ import { World } from './world';
 import { CollisionHandler } from './collisionHandler';
 import { Position } from './camera';
 import { SpriteAtlas } from './spriteAtlas';
+import { WeatherState, WeatherSystem } from './weather/weatherSystem';
+import { GameControls } from './gameControls';
 
 // Interface for objects that can be rendered with depth sorting
 export interface RenderableObject {
@@ -32,11 +33,12 @@ export interface Touch {
 
 export class Game {
   private p: p5;
-  
+  weatherSystem: WeatherSystem;
+  private weatherState: WeatherState = WeatherState.CLEAR;
+
   player: Player;
   obstacleManager: ObstacleManager;
 
-  private inputHandler: InputHandler;
   private isPaused: boolean = false;
   private gameState: GameState = GameState.PLAYING; // Default state
 
@@ -45,13 +47,7 @@ export class Game {
 
   private assetsLoaded: boolean = false;
   private assetsLoadingFailed: boolean = false;
-  skiTrack: SkiTrack; 
-
-  // For handling key press events
-  private leftKeyPressed: boolean = false;
-  private rightKeyPressed: boolean = false;
-  private downKeyPressed: boolean = false;
-  private debugKeyPressed: boolean = false;
+  skiTrack: SkiTrack;
 
   public debug: boolean = false;
   backgroundY: number = 0;
@@ -61,25 +57,28 @@ export class Game {
   private collisionHandler: CollisionHandler;
   spriteAtlases: Map<string, SpriteAtlas> = new Map();
 
+  // Game controls instance
+  private gameControls: GameControls;
+
   constructor(p: p5) {
     this.p = p;
-    this.inputHandler = new InputHandler();
     this.loadAssets();
-
+    
     this.camera = new Camera(this.p, this);
-
     this.world = new World(this.p, this.camera, this);
 
     // Position player at the top middle of the screen, facing down
-    // position is world position
     this.player = new Player(this.p, { x: 0, y: 0 }, this);
 
     this.obstacleManager = new ObstacleManager(this.p, this);
     this.skiTrack = new SkiTrack(this);
     this.collisionHandler = new CollisionHandler(this);
-
+    this.weatherSystem = new WeatherSystem(this.p, this);
+    
+    // Initialize game controls
+    this.gameControls = new GameControls(this.p, this);
+    
     console.debug("Game initialized. Press 'D' to toggle debug mode");
-    this.setupKeyboardControls();
   }
 
   private loadAssets(): void {
@@ -114,65 +113,33 @@ export class Game {
       return; // Don't update if assets failed to load
     }
 
-    // Handle inputs and update player direction
-    this.handleInput();
+    // Always update game controls regardless of pause state
+    // This ensures we can detect unpause key presses
+    this.gameControls.update();
 
-    // Update player entity
-    this.player.update();
+    // Only update game elements if the game is not paused
+    if (!this.isPaused) {
+      // Update player entity
+      this.player.update();
 
-    
-    
-    // Update camera to follow player
-    this.camera.update();
-    
-    // Update world entities
-    this.world.update();
-    
-    // Update obstacles
-    this.obstacleManager.update(this);
+      // Update weather system
+      this.weatherSystem.update();
 
-    // handle collisions
-    this.collisionHandler.update(this.player, this.obstacleManager.obstacles);
-  }
+      // Update camera to follow player
+      this.camera.update();
 
-  private handleInput(): void {
-    // pause game if 'SPACE' is pressed
-    if (this.inputHandler.isKeyDown(' ') && !this.isPaused) {
-      this.p.noLoop();
-      this.isPaused = true;
-    }
-    else if (this.inputHandler.isKeyDown(' ') && this.isPaused) {
-      this.p.loop();
-      this.isPaused = false;
-    }
-    // Check for new key presses
-    if (this.inputHandler.isKeyDown(undefined, this.p.LEFT_ARROW) && !this.leftKeyPressed) {
-      this.leftKeyPressed = true;
-      this.player.turnLeft();
-    }
-    else if (!this.inputHandler.isKeyDown(undefined, this.p.LEFT_ARROW) && this.leftKeyPressed) {
-      this.leftKeyPressed = false;
-    }
+      // Update world entities
+      this.world.update();
 
-    if (this.inputHandler.isKeyDown(undefined, this.p.RIGHT_ARROW) && !this.rightKeyPressed) {
-      this.rightKeyPressed = true;
-      this.player.turnRight();
-    }
-    else if (!this.inputHandler.isKeyDown(undefined, this.p.RIGHT_ARROW) && this.rightKeyPressed) {
-      this.rightKeyPressed = false;
-    }
+      // Update obstacles
+      this.obstacleManager.update(this);
 
-    // Toggle debug mode with 'D' key
-    if (this.inputHandler.isKeyDown(undefined, 68) && !this.debugKeyPressed) { // 68 is keyCode for 'D'
-      this.debugKeyPressed = true;
-      this.toggleDebug();
-    }
-    else if (!this.inputHandler.isKeyDown(undefined, 68) && this.debugKeyPressed) {
-      this.debugKeyPressed = false;
+      // handle collisions
+      this.collisionHandler.update(this.player, this.obstacleManager.obstacles);
     }
   }
 
-  private toggleDebug(): void {
+  public toggleDebug(): void {
     this.debug = !this.debug;
     this.obstacleManager.toggleDebug();
     this.player.toggleDebug();
@@ -197,42 +164,15 @@ export class Game {
     // Render ski tracks BEFORE player and obstacles so they appear underneath
     this.skiTrack.render(this.p);
 
-    // Collect all renderable objects for depth sorting
-    const renderableObjects: RenderableObject[] = [];
-    
-    // Add player to the renderable objects
-    renderableObjects.push(this.player);
-    
-    // Add obstacles to the renderable objects
-    this.obstacleManager.obstacles.forEach(obstacle => {
-      renderableObjects.push(obstacle);
-    });
-    
-    // Sort objects by their ground position (base Y position) rather than center
-    renderableObjects.sort((a, b) => {
-      // Calculate base positions for both objects
-      // For objects without height property, default to using their center position
-      const aBaseY = a.worldPos.y + (a.height ? a.height/2 : 0);
-      const bBaseY = b.worldPos.y + (b.height ? b.height/2 : 0);
-      
-      // Sort by base Y position (smaller Y values first = further away)
-      return aBaseY - bBaseY;
-    });
-    
-    // Render objects in Y-order
-    for (const object of renderableObjects) {
-      if (object === this.player) {
-        this.player.render();
-      } else {
-        // It's an obstacle
-        const obstacle = object as Obstacle;
-        obstacle.render(this.p, this);
-        
-        // If debug mode is enabled, draw the collision boxes for obstacles
-        if (this.debug) {
-          this.obstacleManager.renderObstacleDebugHitbox(obstacle);
-        }
-      }
+    // render objects based on their depth
+    this.renderDynamicObjects();
+
+    // Render weather effects AFTER everything else
+    this.weatherSystem.render();
+
+    // Show pause indicator
+    if (this.isPaused) {
+      this.renderPauseIndicator();
     }
 
     // Show debug info for obstacles
@@ -241,30 +181,52 @@ export class Game {
       this.p.textSize(12);
       this.p.textAlign(this.p.LEFT, this.p.TOP);
       this.p.text(`Obstacles: ${this.obstacleManager.obstacles.length}`, 10, 10);
+      this.p.text(`Weather: ${WeatherState[this.weatherSystem.getCurrentWeatherState()]}`, 10, 290);
+      this.p.text(`Visibility: ${(100 - this.weatherSystem.getVisibilityFactor() * 100).toFixed(0)}%`, 10, 310);
     }
-
-    // Render touch controls on mobile/tablet
-    // if (this.isMobileDevice()) {
-    //   this.renderTouchControls();
-    // }
 
     // Display controls information
     this.renderControlsInfo();
   }
 
-  private renderTouchControls(): void {
-    // Simple visualization of touch zones
-    this.p.noFill();
-    this.p.stroke(255, 255, 255, 100);
+  private renderDynamicObjects(): void {
+    // Collect all renderable objects for depth sorting
+    const renderableObjects: RenderableObject[] = [];
 
-    // Left control area
-    this.p.rect(0, 0, this.p.width / 3, this.p.height);
+    // Add player to the renderable objects
+    renderableObjects.push(this.player);
 
-    // Right control area
-    this.p.rect(this.p.width * 2 / 3, 0, this.p.width / 3, this.p.height);
+    // Add obstacles to the renderable objects
+    this.obstacleManager.obstacles.forEach(obstacle => {
+      renderableObjects.push(obstacle);
+    });
 
-    // Speed boost area
-    this.p.rect(0, this.p.height * 2 / 3, this.p.width, this.p.height / 3);
+    // Sort objects by their ground position (base Y position) rather than center
+    renderableObjects.sort((a, b) => {
+      // Calculate base positions for both objects
+      // For objects without height property, default to using their center position
+      const aBaseY = a.worldPos.y + (a.height ? a.height / 2 : 0);
+      const bBaseY = b.worldPos.y + (b.height ? b.height / 2 : 0);
+
+      // Sort by base Y position (smaller Y values first = further away)
+      return aBaseY - bBaseY;
+    });
+
+    // Render objects in Y-order
+    for (const object of renderableObjects) {
+      if (object === this.player) {
+        this.player.render();
+      } else {
+        // It's an obstacle
+        const obstacle = object as Obstacle;
+        obstacle.render(this.p, this);
+
+        // If debug mode is enabled, draw the collision boxes for obstacles
+        if (this.debug) {
+          this.obstacleManager.renderObstacleDebugHitbox(obstacle);
+        }
+      }
+    }
   }
 
   private renderLoadingScreen(): void {
@@ -288,10 +250,6 @@ export class Game {
     }
   }
 
-  private isMobileDevice(): boolean {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  }
-
   private renderControlsInfo(): void {
     this.p.fill(255);
     this.p.textSize(12);
@@ -305,7 +263,7 @@ export class Game {
       this.p.text("DEBUG MODE", 10, 30);
       this.p.text(`Player position: (${Math.round(this.player.worldPos.x)}, ${Math.round(this.player.worldPos.y)})`, 10, 50);
       this.p.text(`Player state: ${PlayerState[this.player.getCurrentState()]}`, 10, 70);
-      
+
       // Add collision count and special states
       if (this.player.isFlying()) {
         this.p.fill(255, 0, 255); // Purple for flying
@@ -317,13 +275,13 @@ export class Game {
         this.p.fill(255, 255, 0);
         this.p.text(`Collision: ${this.player.isInCollisionState() ? 'YES' : 'NO'}`, 10, 90);
       }
-      
+
       // Get terrain info at player position for debug display
       if (this.world && this.player) {
         const playerPos = this.player.worldPos;
         const terrainHeight = this.world.getHeightAtPosition(playerPos);
         const slope = this.world.getSlopeAtPosition(playerPos);
-        
+
         this.p.fill(0, 255, 255); // Cyan for terrain info
         this.p.text(`Terrain bumpiness: ${terrainHeight.toFixed(3)}`, 10, 110);
         this.p.text(`Terrain slope: ${(slope.angle * 180 / Math.PI).toFixed(1)}°`, 10, 130);
@@ -332,47 +290,16 @@ export class Game {
     }
   }
 
-  // Input handling methods
-  public handleKeyPressed(keyCode: number, key: string): void {
-    this.inputHandler.setKeyDown(keyCode, key);
-  }
-
-  public handleKeyReleased(keyCode: number, key: string): void {
-    this.inputHandler.setKeyUp(keyCode, key);
-  }
-
-  private setupKeyboardControls(): void {
-    this.p.keyPressed = () => {
-      if (this.p.keyCode === this.p.LEFT_ARROW) {
-        this.player.turnLeft();
-      } else if (this.p.keyCode === this.p.RIGHT_ARROW) {
-        this.player.turnRight();
-      } else if (this.p.keyCode === this.p.ENTER || this.p.keyCode === this.p.RETURN) {
-        // Start the game if it's in menu mode
-        if (this.gameState === GameState.MENU) {
-          this.startGame();
-        }
-        // Restart the game if it's in game over state
-        else if (this.gameState === GameState.GAME_OVER) {
-          this.resetGame();
-        }
-      } else if (this.p.key === 'd' || this.p.key === 'D') {
-        // Toggle debug mode
-        this.debug = !this.debug;
-        this.player.toggleDebug();
-        this.obstacleManager.toggleDebug();
-        console.debug("Debug mode toggled");
-      } else if (this.p.key === ' ' || this.p.keyCode === 32) { // Space key
-        // Toggle pause
-        this.togglePause();
-      } else if (this.debug) {
-        // Debug mode controls
-        if (this.p.key === 'm' || this.p.key === 'M') {
-          // Toggle heightmap visualization
-          this.world.toggleDebugHeightmap();
-        }
-      }
-    };
+  // Show pause indicator
+  private renderPauseIndicator(): void {
+    this.p.fill(255, 255, 255, 150); // Semi-transparent white
+    this.p.rect(0, 0, this.p.width, this.p.height);
+    this.p.fill(0);
+    this.p.textSize(32);
+    this.p.textAlign(this.p.CENTER, this.p.CENTER);
+    this.p.text("PAUSED", this.p.width / 2, this.p.height / 2);
+    this.p.textSize(16);
+    this.p.text("Press SPACE to resume", this.p.width / 2, this.p.height / 2 + 40);
   }
 
   // Start game from menu state
@@ -384,13 +311,13 @@ export class Game {
   }
 
   // Reset game after game over
-  private resetGame(): void {
+  public resetGame(): void {
     // Reset player position
     this.player = new Player(this.p, { x: 0, y: 0 }, this);
 
     // Create a new obstacle manager which will load its own assets
     this.obstacleManager = new ObstacleManager(this.p, this);
-    
+
     // Reset ski tracks
     this.skiTrack = new SkiTrack(this);
 
@@ -405,16 +332,14 @@ export class Game {
   }
 
   // Toggle pause state
-  private togglePause(): void {
+  public togglePause(): void {
     if (this.gameState === GameState.PLAYING) {
       this.gameState = GameState.PAUSED;
       this.isPaused = true;
-      this.p.noLoop();
       console.debug("Game paused");
     } else if (this.gameState === GameState.PAUSED) {
       this.gameState = GameState.PLAYING;
       this.isPaused = false;
-      this.p.loop();
       console.debug("Game resumed");
     }
   }
@@ -425,7 +350,7 @@ export class Game {
     if (this.camera) {
       this.camera.handleResize(newWidth, newHeight);
     }
-    
+
     // You may need to adjust other game elements based on the new size
     // For example, repositioning UI elements, adjusting view distances, etc.
     console.debug(`Canvas resized to ${newWidth}x${newHeight}`);
@@ -440,10 +365,10 @@ export class Game {
         resolve(this.spriteAtlases.get(name)!);
         return;
       }
-      
+
       // Create new atlas
       const atlas = new SpriteAtlas(this.p);
-      
+
       // Load the atlas data
       atlas.loadAtlas(jsonPath, imagePath)
         .then(() => {
@@ -458,19 +383,19 @@ export class Game {
         });
     });
   }
-  
+
   // Get a sprite atlas by name
   public getSpriteAtlas(name: string): SpriteAtlas | null {
     return this.spriteAtlases.get(name) || null;
   }
-  
+
   // Preload all common atlases
   public loadAllAtlases(): Promise<void> {
     const promises: Promise<SpriteAtlas>[] = [
       this.loadSpriteAtlas('player', 'assets/player.json', 'assets/player.png'),
       this.loadSpriteAtlas('obstacles', 'assets/obstacles.json', 'assets/obstacles.png')
     ];
-    
+
     return Promise.all(promises).then(() => {
       console.debug('All sprite atlases loaded successfully');
     });

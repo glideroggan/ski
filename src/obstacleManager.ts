@@ -218,9 +218,31 @@ export class ObstacleManager {
           // Convert world coordinates to screen coordinates for rendering
           const screenPos = game.camera.worldToScreen(this.worldPos);
           
-          // Get the base dimensions for rendering
-          const baseDimensions = game.obstacleManager.getObstacleDimensions(this.type);
-          this.sprite.render(screenPos.x, screenPos.y, baseDimensions.width, baseDimensions.height);
+          // Get weather visibility factor and calculate distance-based opacity
+          const visibilityFactor = game.weatherSystem.getVisibilityFactor();
+          const distanceFromPlayer = Math.abs(this.worldPos.y - game.player.worldPos.y);
+          
+          // Obstacles far away become less visible during bad weather
+          let opacity = 255;
+          if (visibilityFactor > 0) {
+            // Maximum viewing distance decreases as visibility gets worse
+            const maxViewingDistance = 1000 * (1 - visibilityFactor * 0.7);
+            opacity = 255 * Math.max(0, 1 - (distanceFromPlayer / maxViewingDistance));
+          }
+          
+          // Only render if somewhat visible
+          if (opacity > 10) {
+            p.push();
+            if (opacity < 255) {
+              p.tint(255, opacity);
+            }
+            
+            // Get the base dimensions for rendering
+            const baseDimensions = game.obstacleManager.getObstacleDimensions(this.type);
+            this.sprite.render(screenPos.x, screenPos.y, baseDimensions.width, baseDimensions.height);
+            
+            p.pop();
+          }
         }
       },
       

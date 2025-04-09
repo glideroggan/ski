@@ -74,32 +74,14 @@ const sketch = (p: p5) => {
     game.render();
   };
 
-  p.keyPressed = () => {
-    game.handleKeyPressed(p.keyCode, p.key);
-    // return false; // Prevent default behavior
-  };
-
-  p.keyReleased = () => {
-    game.handleKeyReleased(p.keyCode, p.key);
-    // return false; // Prevent default behavior
-  };
-
+  // Keyboard input is now handled by GameControls class
+  
   p.windowResized = windowResized;
 
-//   p.touchStarted = () => {
-//     game.handleTouchStarted(p.touches);
-//     return false; // Prevent default behavior
-//   };
-
-//   p.touchMoved = () => {
-//     game.handleTouchMoved(p.touches);
-//     return false; // Prevent default behavior
-//   };
-
-//   p.touchEnded = () => {
-//     game.handleTouchEnded();
-//     return false; // Prevent default behavior
-//   };
+  // Touch input can be implemented when needed
+  // p.touchStarted = () => { ... };
+  // p.touchMoved = () => { ... };
+  // p.touchEnded = () => { ... };
 };
 
 // Start the sketch

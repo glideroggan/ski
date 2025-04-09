@@ -31,15 +31,21 @@ Can also increase their speed by pressing down
 # To implement
 ## Weather Changes: Occasional snowstorms that reduce visibility
 ### Visual Effects
-- Progressive Visibility Reduction: A semi-transparent white gradient overlay that gets more opaque toward the bottom of the screen
-- Particle System: Varying densities of snowflakes based on storm intensity
+- ✔️Progressive Visibility Reduction: A semi-transparent white gradient overlay that gets more opaque toward the bottom of the screen
+- ✔️Particle System: Varying densities of snowflakes based on storm intensity
   - four different "particle" assets
 - Screen Shake: Subtle camera shake during intense blizzard conditions
 ### Gameplay Mechanics
-- Visibility Range: During storms, obstacles would only become visible when closer to the player
+- ✔️Visibility Range: During storms, obstacles would only become visible when closer to the player
 - Weather Progression:
-  - Clear conditions → Light snow → Heavy snow → Blizzard
-- Weather could change gradually or suddenly (surprise blizzards!)
+  - ✔️Clear conditions → ✔️Light snow → ✔️Heavy snow → ✔️Blizzard
+- ✔️Weather could change gradually or suddenly (surprise blizzards!)
+#### Improvements
+Advanced Implementation Ideas
+Weather Zones: Create regions on the map with different typical weather patterns
+Weather Warning System: Visual/audio cues before weather changes
+Weather-Specific Obstacles: Snowdrifts that only appear during heavy snow
+Special Equipment: Allow player to find and use items like goggles to improve visibility in storms
 #### LATER
 Difficulty Scaling: Weather could change more frequently as the game progresses, increasing the challenge
 
@@ -63,9 +69,12 @@ Animal Friends: Birds that fly alongside or squirrels that cheer
 Secret Easter Eggs: Hidden paths or surprise characters
 Silly Physics: Exaggerated crash animations or bouncy snow piles
 Avalanche Chase Scenes: Occasional "run from the avalanche" segments
-
+### Map progression
+- once you finsh the first slope on the mountain, you will see a map of your progression, which will show additional slopes...
+  - 🔧develop the idea
 
 ## Later
+
 - Concentrate on tablet mode first
   - thumb places for tablet mode
 

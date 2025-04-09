@@ -178,7 +178,7 @@ export class Player implements RenderableObject {
         
         if (sprite) {
           console.debug(`Loaded sprite for state ${PlayerState[mapping.state]}: ${mapping.name}, rotated: ${sprite.isRotated()}`);
-          console.log(`Sprite dimensions: ${sprite.getSrcWidth()} x ${sprite.getSrcHeight()}`);
+          // console.log(`Sprite dimensions: ${sprite.getSrcWidth()} x ${sprite.getSrcHeight()}`);
           this.playerData.sprites.set(mapping.state, sprite);
         } else {
           console.warn(`Sprite not found for state ${PlayerState[mapping.state]}, name: ${mapping.name}`);

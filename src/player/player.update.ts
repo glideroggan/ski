@@ -1,4 +1,4 @@
-import { Position } from '../camera';
+import { WeatherState } from '../weather/weatherSystem';
 import { Obstacle } from '../obstacleManager';
 import { Player, PlayerData, PlayerState } from './player';
 
@@ -76,8 +76,34 @@ export class PlayerUpdate {
     private updateMovement(): void {
         // Calculate movement speed (faster when flying)
         const speedMultiplier = this.isFlying() ? 2.0 : 1.0;
+        
+        // Apply weather effects to movement
+        const weatherState = this.playerData.game.weatherSystem.getCurrentWeatherState();
+        
+        // Weather affects control difficulty only, not speed
+        let weatherControlDifficulty = 0;
+        
+        switch (weatherState) {
+            case WeatherState.LIGHT_SNOW:
+                weatherControlDifficulty = 0.1; // Slight control difficulty
+                break;
+            case WeatherState.HEAVY_SNOW:
+                weatherControlDifficulty = 0.25; // More control difficulty
+                break;
+            case WeatherState.BLIZZARD:
+                weatherControlDifficulty = 0.4; // Major control difficulty
+                break;
+            default:
+                weatherControlDifficulty = 0;
+        }
+        
         const baseSpeed = this.maxPlayerMovement * speedMultiplier;
-
+        
+        // Random sideways movement in worse weather conditions
+        if (weatherControlDifficulty > 0) {
+            this.playerData.worldPos.x += (Math.random() - 0.5) * weatherControlDifficulty * 5;
+        }
+        
         // Move based on current state
         switch (this.playerData.currentState) {
             case PlayerState.LEFT:
@@ -184,6 +210,17 @@ export class PlayerUpdate {
             return false;
         }
 
+        // Random chance to fail turning in bad weather
+        const weatherState = this.playerData.game.weatherSystem.getCurrentWeatherState();
+        if (weatherState !== WeatherState.CLEAR) {
+            const failChance = weatherState === WeatherState.BLIZZARD ? 0.3 : 
+                               weatherState === WeatherState.HEAVY_SNOW ? 0.15 : 0.05;
+            if (Math.random() < failChance) {
+                console.debug("Turn failed due to weather conditions");
+                return false;
+            }
+        }
+
         // Progressive state transition when turning right
         switch (this.playerData.currentState) {
             case PlayerState.LEFT:
@@ -212,6 +249,17 @@ export class PlayerUpdate {
         // Prevent turning if crashed or flying
         if (this.isCrashed() || this.isFlying() || this.stateTransitionTimer > 0) {
             return false;
+        }
+
+        // Random chance to fail turning in bad weather
+        const weatherState = this.playerData.game.weatherSystem.getCurrentWeatherState();
+        if (weatherState !== WeatherState.CLEAR) {
+            const failChance = weatherState === WeatherState.BLIZZARD ? 0.3 : 
+                               weatherState === WeatherState.HEAVY_SNOW ? 0.15 : 0.05;
+            if (Math.random() < failChance) {
+                console.debug("Turn failed due to weather conditions");
+                return false;
+            }
         }
 
         // Progressive state transition when turning left
