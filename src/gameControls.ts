@@ -16,6 +16,12 @@ export class GameControls {
     private leftKey: boolean = false;
     private rightKey: boolean = false;
     private downKey: boolean = false;
+    private upKey: boolean = false;
+    
+    // Speed control settings
+    private speedControlUpdateRate: number = 10; // Frames between speed updates when holding key (reduced from 30)
+    private speedControlTimer: number = 0;
+    private speedChangeAmount: number = 1.0; // Updated to match what we're using in update method
 
     // Touch input tracking
     private activeTouches: Map<number, Touch> = new Map();
@@ -51,6 +57,30 @@ export class GameControls {
         if (this.rightKey) {
             this.game.player.turnRight();
         }
+        
+        // Handle speed control with up/down keys (with a rate limiter)
+        if ((this.upKey || this.downKey) && this.speedControlTimer <= 0) {
+            const baseDifficulty = this.game.difficultyManager.getDifficultyLevel();
+            const baseSpeed = this.game.difficultyManager.getPlayerSpeed();
+            
+            if (this.downKey) {
+                // Increase player speed directly
+                this.game.player.increaseSpeed(this.speedChangeAmount);
+                console.debug(`Speed increased: Offset=${this.game.player.getSpeedOffset().toFixed(2)}, Base=${baseSpeed.toFixed(2)} (${baseDifficulty}% difficulty)`);
+            } else if (this.upKey) {
+                // Decrease player speed directly
+                this.game.player.decreaseSpeed(this.speedChangeAmount);
+                console.debug(`Speed decreased: Offset=${this.game.player.getSpeedOffset().toFixed(2)}, Base=${baseSpeed.toFixed(2)} (${baseDifficulty}% difficulty)`);
+            }
+            
+            // Reset timer to prevent too-rapid changes
+            this.speedControlTimer = this.speedControlUpdateRate;
+        }
+        
+        // Update speed control timer
+        if (this.speedControlTimer > 0) {
+            this.speedControlTimer--;
+        }
 
         // Handle touch input for movement
         if (this.activeTouches.size > 0) {
@@ -76,6 +106,8 @@ export class GameControls {
             this.rightKey = true;
         } else if (this.p.keyCode === this.p.DOWN_ARROW) {
             this.downKey = true;
+        } else if (this.p.keyCode === this.p.UP_ARROW) {
+            this.upKey = true;
         }
 
         // One-time key actions
@@ -85,17 +117,8 @@ export class GameControls {
             this.game.toggleDebug();
         }
 
-        // Difficulty control keys
-        else if (this.p.key === '+' || this.p.key === '=') {
-            // Increase difficulty
-            this.game.difficultyManager.increaseDifficulty(10);
-            console.debug(`Difficulty increased to ${this.game.difficultyManager.getDifficultyLevel()}%`);
-        } else if (this.p.key === '-' || this.p.key === '_') {
-            // Decrease difficulty
-            this.game.difficultyManager.decreaseDifficulty(10);
-            console.debug(`Difficulty decreased to ${this.game.difficultyManager.getDifficultyLevel()}%`);
-        }
-
+        // Removing +/- key controls for difficulty as they're now handled by UP/DOWN arrows
+        
         // Weather control keys (for testing)
         else if (this.p.key === '1') {
             this.game.weatherSystem.setWeatherState(WeatherState.CLEAR);
@@ -116,6 +139,7 @@ export class GameControls {
             this.p.keyCode === this.p.LEFT_ARROW ||
             this.p.keyCode === this.p.RIGHT_ARROW ||
             this.p.keyCode === this.p.DOWN_ARROW ||
+            this.p.keyCode === this.p.UP_ARROW ||
             this.p.keyCode === 32  // space bar
         ) {
             return false;  // prevent default
@@ -129,6 +153,8 @@ export class GameControls {
             this.rightKey = false;
         } else if (this.p.keyCode === this.p.DOWN_ARROW) {
             this.downKey = false;
+        } else if (this.p.keyCode === this.p.UP_ARROW) {
+            this.upKey = false;
         }
     }
 

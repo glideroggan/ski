@@ -265,7 +265,7 @@ export class Game {
     this.p.fill(255);
     this.p.textSize(12);
     this.p.textAlign(this.p.RIGHT, this.p.BOTTOM);
-    this.p.text("LEFT/RIGHT: Turn | SPACE: Pause | +/-: Adjust Difficulty | D: Debug Mode", this.p.width - 10, this.p.height - 10);
+    this.p.text("LEFT/RIGHT: Turn | UP/DOWN: Adjust Speed | SPACE: Pause | D: Debug Mode", this.p.width - 10, this.p.height - 10);
     
     // Always show difficulty level even when not in debug mode
     this.renderDifficultyIndicator();

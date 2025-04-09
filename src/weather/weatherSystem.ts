@@ -159,20 +159,44 @@ export class WeatherSystem {
   }
   
   public changeWeather(): void {
-    // Randomly select a new weather state
-    const states = [WeatherState.LIGHT_SNOW, WeatherState.HEAVY_SNOW];
+    // Get current difficulty level to influence weather selection
+    const difficultyLevel = this.game.difficultyManager.getBaseDifficultyLevel();
     
-    // Add blizzard as a possibility with lower chance
-    if (Math.random() < 0.3) {
-      states.push(WeatherState.BLIZZARD);
+    // Choose weather state based on difficulty
+    let newState: WeatherState;
+    
+    if (difficultyLevel >= 85) {
+      // At very high difficulty, high chance of blizzard
+      newState = Math.random() < 0.7 ? WeatherState.BLIZZARD : WeatherState.HEAVY_SNOW;
+    } else if (difficultyLevel >= 70) {
+      // At high difficulty, mostly heavy snow with chance of blizzard
+      const rand = Math.random();
+      if (rand < 0.3) {
+        newState = WeatherState.BLIZZARD;
+      } else if (rand < 0.9) {
+        newState = WeatherState.HEAVY_SNOW;
+      } else {
+        newState = WeatherState.LIGHT_SNOW;
+      }
+    } else if (difficultyLevel >= 50) {
+      // At medium difficulty, mix of heavy and light snow
+      newState = Math.random() < 0.6 ? WeatherState.HEAVY_SNOW : WeatherState.LIGHT_SNOW;
+    } else {
+      // At low difficulty, mostly light snow
+      newState = WeatherState.LIGHT_SNOW;
     }
     
-    const newState = states[Math.floor(Math.random() * states.length)];
-    const sudden = Math.random() < 0.2; // 20% chance of sudden weather change
+    // Determine if the change is sudden based on difficulty (more sudden at higher difficulty)
+    const sudden = Math.random() < (0.1 + difficultyLevel / 100 * 0.3); // 10-40% chance
     
     this.setWeatherState(newState, sudden);
     this.weatherTimer = 0;
-    this.weatherDuration = 600 + Math.random() * 1200; // 10-30 seconds
+    
+    // Weather duration is shorter at higher difficulties
+    const maxDuration = Math.max(300, 1500 - (difficultyLevel * 10));
+    this.weatherDuration = 300 + Math.random() * maxDuration;
+    
+    console.debug(`Weather changing to: ${WeatherState[newState]}, sudden: ${sudden}, duration: ${this.weatherDuration.toFixed(0)} frames, difficulty: ${difficultyLevel.toFixed(0)}%`);
   }
   
   public setWeatherState(state: WeatherState, sudden: boolean = false): void {

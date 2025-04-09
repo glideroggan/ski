@@ -31,6 +31,9 @@ export class PlayerUpdate {
     }
 
     public update(): void {
+        // Update speed smoothly
+        this.updatePlayerSpeed();
+        
         // Update flying timer
         if (this.isFlying() && this.flyingTimer > 0) {
             this.flyingTimer--;
@@ -73,9 +76,32 @@ export class PlayerUpdate {
         this.updateTerrainEffects();
     }
 
+    /**
+     * Update player speed with smooth transition
+     */
+    private updatePlayerSpeed(): void {
+        // Get base speed from difficulty manager
+        const baseDifficultySpeed = this.playerData.game.difficultyManager.getPlayerSpeed();
+        
+        // Calculate target speed = base difficulty speed + player's speed offset
+        // Ensure it's never below the base difficulty level
+        const targetSpeed = Math.max(baseDifficultySpeed, baseDifficultySpeed + this.playerData.speedOffset);
+        
+        // Smoothly transition current speed towards target speed
+        if (this.playerData.currentSpeed !== targetSpeed) {
+            const diff = targetSpeed - this.playerData.currentSpeed;
+            this.playerData.currentSpeed += diff * this.playerData.speedTransitionFactor;
+            
+            // If very close to target, snap to it
+            if (Math.abs(diff) < 0.01) {
+                this.playerData.currentSpeed = targetSpeed;
+            }
+        }
+    }
+    
     private updateMovement(): void {
-        // Get current speed from difficulty manager
-        const difficultySpeed = this.playerData.game.difficultyManager.getPlayerSpeed();
+        // Use the smoothed speed instead of directly from difficulty manager
+        const playerSpeed = this.playerData.currentSpeed;
         
         // Calculate movement speed (faster when flying)
         const speedMultiplier = this.isFlying() ? 2.0 : 1.0;
@@ -100,8 +126,8 @@ export class PlayerUpdate {
                 weatherControlDifficulty = 0;
         }
         
-        // Use the difficulty-based speed instead of the fixed maxPlayerMovement
-        const baseSpeed = difficultySpeed * speedMultiplier;
+        // Use the smoothed player speed instead of difficulty speed
+        const baseSpeed = playerSpeed * speedMultiplier;
         
         // Random sideways movement in worse weather conditions
         if (weatherControlDifficulty > 0) {

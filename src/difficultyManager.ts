@@ -12,6 +12,14 @@ export class DifficultyManager {
   
   // Difficulty level from 0 to 100
   private difficultyLevel: number = 50; // Start at medium difficulty
+  private targetDifficultyLevel: number = 50; // Target difficulty level for smooth transitions
+  private difficultyTransitionSpeed: number = 0.05; // How quickly difficulty changes (0-1)
+  private minDifficultyLevel: number = 30; // Minimum allowed difficulty level
+  
+  // For gradual difficulty increase over time
+  private gameTimer: number = 0;
+  private difficultyIncreaseRate: number = 0.0002; // Reduced from 0.0005
+  private maxAutoDifficulty: number = 75; // Lowered from 85 to leave room for real difficulty
   
   // Speed settings
   private baseSpeed: number = 4; // Default speed (same as the original maxPlayerMovement)
@@ -51,6 +59,25 @@ export class DifficultyManager {
    * Update difficulty manager state
    */
   public update(): void {
+    // Smooth transition between current and target difficulty
+    if (this.difficultyLevel !== this.targetDifficultyLevel) {
+      // Gradually move current difficulty toward target
+      const diff = this.targetDifficultyLevel - this.difficultyLevel;
+      this.difficultyLevel += diff * this.difficultyTransitionSpeed;
+      
+      // If we're very close to target, snap to it
+      if (Math.abs(diff) < 0.1) {
+        this.difficultyLevel = this.targetDifficultyLevel;
+      }
+    }
+    
+    // Gradual difficulty increase over time
+    this.gameTimer++;
+    const autoDifficultyIncrease = this.gameTimer * this.difficultyIncreaseRate;
+    if (autoDifficultyIncrease < this.maxAutoDifficulty) {
+      this.setDifficultyLevel(this.targetDifficultyLevel + autoDifficultyIncrease);
+    }
+    
     // Update section timers
     if (this.currentSectionIndex >= 0) {
       this.sectionChangeCounter++;
@@ -70,20 +97,24 @@ export class DifficultyManager {
   }
   
   /**
-   * Sync weather conditions with the current difficulty level
+   * Sync weather conditions with the difficulty level
+   * Instead of directly setting weather based on difficulty,
+   * this just increases the chance of weather changes at higher difficulty
    */
   private syncWeatherWithDifficulty(): void {
-    // Get recommended weather state based on difficulty
-    const targetWeather = this.getRecommendedWeatherState();
     const currentWeather = this.game.weatherSystem.getCurrentWeatherState();
     
-    // Only change if current weather doesn't match the recommended weather
-    if (targetWeather !== currentWeather) {
-      // Small chance for sudden weather change at high difficulty
-      const suddenChange = this.difficultyLevel > 70 && Math.random() < 0.3;
+    // Only consider changing weather if currently clear
+    if (currentWeather === WeatherState.CLEAR) {
+      // Higher difficulty = higher chance of weather changes
+      // Scale from 5% at low difficulty to 20% at high difficulty
+      const weatherChangeChance = 0.05 + (this.difficultyLevel / 100) * 0.15;
       
-      console.debug(`Syncing weather to difficulty: ${WeatherState[targetWeather]}`);
-      this.game.weatherSystem.setWeatherState(targetWeather, suddenChange);
+      // Random chance to start weather event
+      if (Math.random() < weatherChangeChance) {
+        console.log(`Random weather event triggered (${(weatherChangeChance * 100).toFixed(1)}% chance at difficulty ${this.difficultyLevel})`);
+        this.game.weatherSystem.changeWeather();
+      }
     }
   }
   
@@ -137,22 +168,31 @@ export class DifficultyManager {
    * Set difficulty level (0-100)
    */
   public setDifficultyLevel(level: number): void {
-    // Clamp value between 0-100
-    this.difficultyLevel = Math.max(0, Math.min(100, level));
+    // Clamp value between min-100
+    this.targetDifficultyLevel = Math.max(this.minDifficultyLevel, Math.min(100, level));
+  }
+  
+  /**
+   * Set target difficulty level with immediate effect
+   * Used for initialization and resets
+   */
+  public setImmediateDifficultyLevel(level: number): void {
+    this.targetDifficultyLevel = Math.max(this.minDifficultyLevel, Math.min(100, level));
+    this.difficultyLevel = this.targetDifficultyLevel;
   }
   
   /**
    * Increase difficulty level
    */
-  public increaseDifficulty(amount: number = 10): void {
-    this.setDifficultyLevel(this.difficultyLevel + amount);
+  public increaseDifficulty(amount: number = 5): void {
+    this.setDifficultyLevel(this.targetDifficultyLevel + amount);
   }
   
   /**
-   * Decrease difficulty level
+   * Decrease difficulty level, but not below minimum
    */
-  public decreaseDifficulty(amount: number = 10): void {
-    this.setDifficultyLevel(this.difficultyLevel - amount);
+  public decreaseDifficulty(amount: number = 5): void {
+    this.setDifficultyLevel(this.targetDifficultyLevel - amount);
   }
   
   /**
@@ -164,8 +204,15 @@ export class DifficultyManager {
   }
 
   /**
+   * Get target difficulty level that we're transitioning to
+   */
+  public getTargetDifficultyLevel(): number {
+    return this.targetDifficultyLevel;
+  }
+
+  /**
    * Get current effective difficulty level (0-100)
-   * This factors in terrain type and weather conditions for a more accurate representation
+   * This factors in terrain type, player speed and weather conditions for a more accurate representation
    */
   public getDifficultyLevel(): number {
     // Start with the base difficulty level
@@ -190,6 +237,20 @@ export class DifficultyManager {
       default:
         // No weather bonus for clear weather
         break;
+    }
+
+    // Add player speed influence (if player exists and has speed data)
+    if (this.game.player) {
+      const baseSpeed = this.getPlayerSpeed();
+      const actualSpeed = this.game.player.getCurrentSpeed();
+      
+      // Calculate how much faster the player is going than the base speed
+      if (actualSpeed > baseSpeed) {
+        const speedFactor = (actualSpeed - baseSpeed) / baseSpeed;
+        // Add up to 30% extra difficulty based on player speed
+        const speedDifficultyBonus = Math.min(30, Math.round(speedFactor * 30));
+        effectiveDifficulty += speedDifficultyBonus;
+      }
     }
     
     // Clamp to 0-100 range

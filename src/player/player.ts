@@ -40,6 +40,11 @@ export class PlayerData {
   terrainHeightFactor: number = 45;
   collisionEffect: number = 0;
   debug: boolean = false;
+  
+  // Speed transition properties
+  currentSpeed: number = 4;          // Actual current speed after smoothing
+  speedOffset: number = 0;           // Player's speed adjustment (can be positive or negative)
+  speedTransitionFactor: number = 0.1; // How quickly speed changes (0-1)
 
   constructor(p: p5, game: Game, pos: Position) {
     this.p = p;
@@ -264,5 +269,50 @@ export class Player implements RenderableObject {
 
   public toggleDebug(): void {
     this.playerData.debug = !this.playerData.debug;
+  }
+
+  /**
+   * Increase the player's speed (positive offset from base speed)
+   */
+  public increaseSpeed(amount: number = 0.5): void {
+    this.playerData.speedOffset += amount;
+    console.debug(`Speed offset increased to ${this.playerData.speedOffset.toFixed(2)}`);
+  }
+
+  /**
+   * Decrease the player's speed (negative offset from base speed, limited by base speed)
+   */
+  public decreaseSpeed(amount: number = 0.5): void {
+    this.playerData.speedOffset -= amount;
+    
+    // Cap the negative offset to prevent too much slowdown
+    const minOffset = -2.5; // Allow slowing down to at most 2.5 units below base speed
+    if (this.playerData.speedOffset < minOffset) {
+      this.playerData.speedOffset = minOffset;
+    }
+    
+    console.debug(`Speed offset decreased to ${this.playerData.speedOffset.toFixed(2)}`);
+  }
+
+  /**
+   * Reset speed offset to zero (return to base speed)
+   */
+  public resetSpeed(): void {
+    this.playerData.speedOffset = 0;
+    console.debug("Speed reset to base value");
+  }
+
+  /**
+   * Get current actual speed (after smoothing)
+   */
+  public getCurrentSpeed(): number {
+    return this.playerData.currentSpeed;
+  }
+
+  /**
+   * Get player's speed offset from the base speed
+   */
+  public getSpeedOffset(): number {
+    return this.playerData.speedOffset;
   }
 }

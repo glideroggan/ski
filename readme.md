@@ -30,18 +30,6 @@ Can also increase their speed by pressing down
 
 
 # To implement
-## Difficulty
-- ✔️variate the speed of the player.
-  - ✔️different sections of the current "map/slope/level" could have different speeds
-  - ✔️for now we could go with some set speeds, and then randomize between them
-- ✔️variate the amount of obstacles
-  - ✔️some sections could have more obstacles than others
-  - ✔️some sections could have less obstacles than others
-- ✔️Best is probably to do it as with visibility, that we have a difficulty slider
-  100% is everything, blizzard, massive amount of obstacles and big slope so that player is going really fast
-  0% is no obstacles, no slope, and no weather
-  and then we increase the slider back and forth and get the different difficulty
-- ✔️this means that 25% could be the same as fast speed with blizzard, as 25% could be slower speed with alot of obstacles and blizzard...
 ## other skiiers
 - ai controlled skier that runs at a constant speed (for now) that doges the obstacles (including the player)
 - later we could make a more complex ai that could work and do same things as a player
