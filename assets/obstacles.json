@@ -2,24 +2,32 @@
 
 {
 	"filename": "rock.png",
-	"frame": {"x":988,"y":1,"w":991,"h":646},
+	"frame": {"x":886,"y":1,"w":991,"h":646},
 	"rotated": false,
 	"trimmed": true,
 	"spriteSourceSize": {"x":10,"y":303,"w":991,"h":646},
 	"sourceSize": {"w":1024,"h":1024}
 },
 {
+	"filename": "snowdrift.png",
+	"frame": {"x":1,"y":1,"w":883,"h":505},
+	"rotated": false,
+	"trimmed": true,
+	"spriteSourceSize": {"x":73,"y":280,"w":883,"h":505},
+	"sourceSize": {"w":1024,"h":1024}
+},
+{
 	"filename": "snowman.png",
-	"frame": {"x":988,"y":649,"w":875,"h":947},
-	"rotated": true,
+	"frame": {"x":1,"y":508,"w":875,"h":947},
+	"rotated": false,
 	"trimmed": true,
 	"spriteSourceSize": {"x":131,"y":5,"w":875,"h":947},
 	"sourceSize": {"w":1024,"h":1024}
 },
 {
 	"filename": "tree.png",
-	"frame": {"x":1,"y":1,"w":1023,"h":985},
-	"rotated": true,
+	"frame": {"x":878,"y":649,"w":1023,"h":985},
+	"rotated": false,
 	"trimmed": true,
 	"spriteSourceSize": {"x":0,"y":39,"w":1023,"h":985},
 	"sourceSize": {"w":1024,"h":1024}
@@ -29,8 +37,8 @@
 	"version": "1.0",
 	"image": "obstacles.png",
 	"format": "RGBA8888",
-	"size": {"w":1980,"h":1525},
+	"size": {"w":1902,"h":1635},
 	"scale": "1",
-	"smartupdate": "$TexturePacker:SmartUpdate:1f9e67dbac3e9f0489ad34ef363a58a9:51d91bd5dbd0d2fa51a11348a7606db4:641f848f5767e234ed2c8b58348ca01d$"
+	"smartupdate": "$TexturePacker:SmartUpdate:d3b9ef16d46eb3511d31f89c79b2ba0d:9c08723a5ff2ee7126c1e8f362b2c36c:641f848f5767e234ed2c8b58348ca01d$"
 }
 }

@@ -53,7 +53,7 @@ export class EntityManager {
     private debug: boolean = false;
 
     // Obstacle types
-    private obstacleTypes: ObstacleType[] = ['tree', 'rock', 'snowman'];
+    private obstacleTypes: ObstacleType[] = ['tree', 'rock', 'snowman', 'snowdrift'];
 
     // Collision adjustments for different entity types
     public collisionAdjustments: Map<string, CollisionOffset> = new Map();
@@ -103,6 +103,14 @@ export class EntityManager {
             yOffset: 15,
             widthFactor: 0.5,
             heightFactor: 0.3
+        });
+
+        // For snowdrifts, use a wide but low hitbox
+        this.collisionAdjustments.set('snowdrift', {
+            xOffset: 0,
+            yOffset: 5,
+            widthFactor: 0.9,
+            heightFactor: 0.6
         });
     }
 
@@ -386,9 +394,17 @@ export class EntityManager {
 
             worldPos = { x: worldPosX, y: worldPosY };
 
-            // Choose a random obstacle type
-            const typeIndex = Math.floor(Math.random() * this.obstacleTypes.length);
-            const type = this.obstacleTypes[typeIndex];
+            // Choose a random obstacle type - ensuring snowdrifts appear regularly (25% chance)
+            // For testing purposes, we're not making them weather-dependent yet
+            let type: ObstacleType;
+            if (Math.random() < 0.25) {
+                type = 'snowdrift'; // 25% chance to be a snowdrift for testing
+            } else {
+                // Otherwise, pick randomly from the other obstacle types
+                const otherTypes: ObstacleType[] = ['tree', 'rock', 'snowman'];
+                const typeIndex = Math.floor(Math.random() * otherTypes.length);
+                type = otherTypes[typeIndex];
+            }
 
             // Get sprite for this obstacle type from atlas
             const spriteName = `${type}.png`;
@@ -396,11 +412,12 @@ export class EntityManager {
 
             if (!sprite) {
                 console.error(`Could not find sprite for obstacle type: ${type}`);
-                return;
+                // If the sprite isn't found, create a null sprite to use the fallback rendering
+                obstacle = new Obstacle(worldPos, type, null);
+            } else {
+                obstacle = new Obstacle(worldPos, type, sprite);
             }
-
-            // Create a temporary obstacle to check for collisions
-            obstacle = new Obstacle(worldPos, type, sprite);
+            
             const newHitbox = obstacle.getCollisionHitbox();
             
             // Check if this obstacle would collide with any existing obstacles

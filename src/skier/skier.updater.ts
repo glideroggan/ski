@@ -20,7 +20,14 @@ export class SkierUpdater {
     private collisionCount: number = 0;
     
     // Visual transition properties
-    private heightSmoothingFactor: number = 0.15;
+    private heightSmoothingFactor: number = 0.05;
+    
+    // Jump properties
+    private isJumping: boolean = false;
+    private jumpHeight: number = 0;
+    private jumpMaxHeight: number = 120; // Maximum height of jump in pixels
+    private jumpPhase: number = 0; // 0 to 1, represents progression through jump arc
+    private jumpPhaseSpeed: number = 0.02; // How quickly the jump progresses
 
     constructor(skierData: SkierData) {
         this.skierData = skierData;
@@ -221,30 +228,42 @@ export class SkierUpdater {
     }
 
     private updateTerrainEffects(): void {
-        // Always calculate terrain height for smoother transitions
+        // Calculate basic terrain height (groundLevel)
         if (this.skierData.game.world) {
             const terrainHeight = this.skierData.game.world.getHeightAtPosition(this.skierData.worldPos);
-            // Gradually adjust current visual height toward target terrain height
-            this.updateVisualHeight(
+            // Save the current terrain height as our ground level
+            this.skierData.groundLevel = terrainHeight * this.skierData.terrainHeightFactor;
+        }
+        
+        // Check if skier is on ground by comparing current height to terrain height
+        if (this.skierData.currentVisualHeight <= this.skierData.groundLevel) {
+            // We're on or below ground level
+            this.skierData.isGrounded = true;
+            this.skierData.verticalVelocity = 0;
+            
+            // Smoothly adjust to terrain height
+            this.skierData.currentVisualHeight = 
                 this.skierData.currentVisualHeight * (1 - this.heightSmoothingFactor) +
-                (terrainHeight * this.skierData.terrainHeightFactor) * this.heightSmoothingFactor
-            );
+                this.skierData.groundLevel * this.heightSmoothingFactor
+        } else {
+            // We're above ground - apply gravity
+            this.skierData.isGrounded = false;
+            
+            // Apply gravity to vertical velocity
+            this.skierData.verticalVelocity -= this.skierData.gravityValue;
+            
+            // Update height based on velocity
+            this.updateVisualHeight(this.skierData.currentVisualHeight + this.skierData.verticalVelocity);
         }
 
         // Always calculate terrain rotation for smoother transitions
-        // Only skip rotation for flying or crashed states
-        if (!this.isFlying() && !this.isCrashed() && this.skierData.game.world) {
+        if (this.skierData.game.world) {
             const slope = this.skierData.game.world.getSlopeAtPosition(this.skierData.worldPos);
             // Gradually adjust current rotation toward target slope angle
             const targetRotation = slope.angle * this.skierData.terrainRotationFactor;
             this.updateRotation(
                 this.skierData.currentRotation * (1 - this.heightSmoothingFactor) +
                 targetRotation * this.heightSmoothingFactor
-            );
-        } else {
-            // Gradually reset rotation to zero when flying or crashed
-            this.updateRotation(
-                this.skierData.currentRotation * (1 - this.heightSmoothingFactor)
             );
         }
     }
@@ -361,33 +380,41 @@ export class SkierUpdater {
      * Handle collisions with obstacles/entities
      */
     public handleCollision(other: ICollidable): void {
+        // Skip collision handling entirely for snowdrifts until we implement the proper heightmap-based jumping
+        if (other.type === 'snowdrift') {
+            // Do nothing - just ignore snowdrift collisions for now
+            console.debug(`${this.skierData.type} passed over a snowdrift (no collision effect)`);
+            return;
+        }
+        
         // Set collision effect for visual feedback
         this.updateCollisionEffect(30);
 
         // Log collision
         console.debug(`${this.skierData.type} collided with ${other.type}`);
 
+        // Different effects based on obstacle type
+        switch (other.type) {
+            case 'tree':
+                // Trees cause a significant slowdown
+                this.updateCollisionEffect(45); // Longer effect
+                break;
+                
+            case 'rock':
+                // Rocks cause a medium slowdown
+                this.updateCollisionEffect(30);
+                break;
+                
+            default:
+                this.updateCollisionEffect(20);
+        }
+        
         // Increment collision count
         this.collisionCount++;
 
-        // Different effects based on collision count and obstacle type
+        // On third collision (or more), transition to flying state (player only)
         if (this.collisionCount >= 3 && this.skierData.type === 'player') {
-            // On fourth collision, transition to flying state (player only)
             this.transitionToFlyingState();
-        } else {
-            // Different effects based on obstacle type
-            switch (other.type) {
-                case 'tree':
-                    // Trees cause a significant slowdown
-                    this.updateCollisionEffect(45); // Longer effect
-                    break;
-                case 'rock':
-                    // Rocks cause a medium slowdown
-                    this.updateCollisionEffect(30);
-                    break;
-                default:
-                    this.updateCollisionEffect(20);
-            }
         }
     }
 

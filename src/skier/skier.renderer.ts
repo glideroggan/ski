@@ -55,10 +55,27 @@ export class SkierRenderer {
         // Apply terrain height adjustment
         y -= this.skierData.currentVisualHeight;
 
+        // Draw shadow when flying/jumping
+        const isFlying = this.isInFlyingState(this.skierData.currentState);
+        if (isFlying) {
+            p.push();
+            // Draw an oval shadow on the ground (without the height adjustment)
+            const shadowY = screenPos.y; // Shadow is directly under the skier's position
+            const shadowWidth = this.skierData.width * 0.6; // Narrower than the skier
+            const shadowHeight = this.skierData.height * 0.2; // Flatter than the skier
+            
+            // Adjust shadow opacity based on height - higher means more transparent shadow
+            const shadowOpacity = Math.max(0, 180 - this.skierData.currentVisualHeight);
+            
+            p.noStroke();
+            p.fill(0, 0, 0, shadowOpacity);
+            p.ellipse(x, shadowY, shadowWidth, shadowHeight);
+            p.pop();
+        }
+
         p.push();
         
         // Apply terrain rotation if not flying or crashed
-        const isFlying = this.isInFlyingState(this.skierData.currentState);
         const isCrashed = this.skierData.currentState === SkierState.CRASHED;
         
         if (!isFlying && !isCrashed) {
@@ -116,6 +133,12 @@ export class SkierRenderer {
             // Show track info
             p.fill(255, 200, 200);
             p.text(`Track points: ${this.skierData.skiTrack.getPointCount()}`, 200, 210);
+            
+            // Show gravity system info
+            p.fill(255, 150, 255);
+            p.text(`Grounded: ${this.skierData.isGrounded}`, 10, 290);
+            p.text(`Ground level: ${this.skierData.groundLevel.toFixed(2)}`, 10, 310);
+            p.text(`Vertical velocity: ${this.skierData.verticalVelocity.toFixed(2)}`, 10, 330);
         }
     }
 

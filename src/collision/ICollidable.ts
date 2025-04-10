@@ -11,7 +11,7 @@ export interface ICollidable {  // The world position of the collidable object
   height: number;
   
   // Type identifier for the object (using union type for better type safety)
-  type: 'player' | 'aiSkier' | 'tree' | 'rock' | 'snowman';
+  type: 'player' | 'aiSkier' | 'tree' | 'rock' | 'snowman' | 'snowdrift';
   
   /**
    * Gets the collision hitbox for this entity.

@@ -45,7 +45,7 @@ export class SkierData {
     // Visual properties
     currentVisualHeight: number = 0;
     currentRotation: number = 0;
-    terrainRotationFactor: number = 0.02;
+    terrainRotationFactor: number = 0.08;
     terrainHeightFactor: number = 45;
 
     // Collision and speed properties
@@ -54,6 +54,12 @@ export class SkierData {
     speedOffset: number = 0;
     speedTransitionFactor: number = 0.04; // Reduced from 0.1 for smoother transitions
 
+    // Gravity and ground detection properties
+    isGrounded: boolean = true;
+    gravityValue: number = 2.5; // How fast the skier falls when not grounded
+    verticalVelocity: number = 0; // Current vertical speed from gravity
+    groundLevel: number = 0; // Current terrain height at skier's position
+    
     variantType: number = 1; // Variant type for different skier appearances
 
     // Debug flag

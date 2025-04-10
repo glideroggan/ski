@@ -5,7 +5,7 @@ import { CollisionHitbox, ICollidable } from './collision/ICollidable';
 import { Position } from './camera';
 import { Sprite } from './sprite';
 
-export type ObstacleType = 'tree' | 'rock' | 'snowman';
+export type ObstacleType = 'tree' | 'rock' | 'snowman' | 'snowdrift';
 
 export class Obstacle implements RenderableObject, ICollidable {
     public worldPos: Position;
@@ -45,6 +45,16 @@ export class Obstacle implements RenderableObject, ICollidable {
                 widthFactor: 0.7, 
                 heightFactor: 0.4 
             } 
+        },
+        'snowdrift': { 
+            width: 200, 
+            height: 100, 
+            hitbox: { 
+                xOffset: 0, 
+                yOffset: 5, 
+                widthFactor: 0.9, 
+                heightFactor: 0.6 
+            } 
         }
     };
 
@@ -57,6 +67,9 @@ export class Obstacle implements RenderableObject, ICollidable {
         const config = Obstacle.typeConfig[this.type];
         this.width = config.width;
         this.height = config.height;
+        if (!this.sprite) {
+            console.warn(`Sprite for ${this.type} is missing`);
+        }
     }
 
     public render(p: p5, game: Game): void {
@@ -100,8 +113,6 @@ export class Obstacle implements RenderableObject, ICollidable {
             p.text(this.type, screenPos.x, screenPos.y);
             
             p.pop();
-            
-            console.warn(`Using fallback rendering for ${this.type} - sprite missing`);
         }
 
         // Debug rendering

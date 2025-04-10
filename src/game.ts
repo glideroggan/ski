@@ -142,9 +142,17 @@ export class Game {
 
       // Use the new collision system
       // Collect all collidable objects into a single array
+      // Filter entities to ensure they implement ICollidable properly
       const collidables: ICollidable[] = [
         this.player, 
         ...this.entityManager.getAllEntities()
+          .filter(entity => {
+            // Check if entity has required ICollidable properties
+            if (!('type' in entity)) return false;
+            const type = entity.type as string;
+            // Only include compatible collision types
+            return ['tree', 'rock', 'snowman', 'snowdrift', 'aiSkier', 'player'].includes(type);
+          }) as ICollidable[]
       ];
       
       // Process collisions using the system
@@ -240,12 +248,17 @@ export class Game {
   }
 
   private renderDynamicObjects(): void {
-    // First render all ski tracks which should always be on the ground
+    // First render snowdrifts which should be at ground level
+    this.renderSnowdrifts();
+    
+    // Then render all ski tracks which should be on top of snowdrifts
     this.renderAllSkiTracks();
     
     // Create a combined array of all renderable objects including the player
+    // But exclude snowdrifts as they're already rendered
     const allRenderableObjects: RenderableObject[] = [
-      ...this.entityManager.getAllEntities(),
+      ...this.entityManager.getAllEntities().filter(entity => 
+        !('type' in entity) || (entity as any).type !== 'snowdrift'),
       this.player
     ];
     
@@ -256,6 +269,21 @@ export class Game {
     // Render all objects in the sorted order
     for (const obj of allRenderableObjects) {
       obj.render(this.p, this);
+    }
+  }
+  
+  /**
+   * Renders snowdrifts separately before ski tracks for proper layering
+   */
+  private renderSnowdrifts(): void {
+    // Get all obstacles from entity manager
+    const obstacles = this.entityManager.getObstacles();
+    
+    // Filter out only snowdrifts and render them
+    const snowdrifts = obstacles.filter(obs => 'type' in obs && obs.type === 'snowdrift');
+    
+    for (const snowdrift of snowdrifts) {
+      snowdrift.render(this.p, this);
     }
   }
 

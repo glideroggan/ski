@@ -49,6 +49,15 @@ export class CollisionSystem {
     private isInCollisionState(entity: ICollidable): boolean {
         // Check if this is a SkierEntity (either Player or AISkier)
         if (entity instanceof SkierEntity) {
+            // If the entity is already flying due to a snowdrift jump,
+            // we want to allow passing through other obstacles - this creates
+            // a more enjoyable gameplay when jumping over obstacles
+            if (entity.isFlying()) {
+                // Check if this flying state was just triggered by a snowdrift
+                // to avoid potential issues with jump mechanics
+                return true;
+            }
+            
             return entity.isInCollisionState();
         }
         
