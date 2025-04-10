@@ -366,39 +366,73 @@ export class EntityManager {
         const screenWidth = this.p.width;
         const screenHeight = this.p.height;
 
-        // Calculate a position ahead of the player (AHEAD = BELOW = HIGHER Y VALUE)
-        // x is random across the width, y is ahead of the player, in world coordinates
-        const worldPosX = playerWorldPos.x + (Math.random() * screenWidth - screenWidth / 2);
+        // Try multiple positions if needed to avoid collisions
+        let validPositionFound = false;
+        let attempts = 0;
+        const maxAttempts = 10; // Maximum number of attempts to find a valid position
         
-        // Place obstacles ahead of the player (1.0-2.0 screen heights BELOW the player)
-        // Increased from 0.5-1.5 to prevent "popping in" appearance
-        const distanceAhead = screenHeight * (1.0 + Math.random());
-        const worldPosY = playerWorldPos.y + distanceAhead; // ADD to player Y to place BELOW the player
+        let worldPos: Position;
+        let obstacle: Obstacle | null = null;
 
-        const worldPos = { x: worldPosX, y: worldPosY };
+        while (!validPositionFound && attempts < maxAttempts) {
+            // Calculate a position ahead of the player (AHEAD = BELOW = HIGHER Y VALUE)
+            // x is random across the width, y is ahead of the player, in world coordinates
+            const worldPosX = playerWorldPos.x + (Math.random() * screenWidth - screenWidth / 2);
+            
+            // Place obstacles ahead of the player (1.0-2.0 screen heights BELOW the player)
+            // Increased from 0.5-1.5 to prevent "popping in" appearance
+            const distanceAhead = screenHeight * (1.0 + Math.random());
+            const worldPosY = playerWorldPos.y + distanceAhead; // ADD to player Y to place BELOW the player
 
-        // Choose a random obstacle type
-        const typeIndex = Math.floor(Math.random() * this.obstacleTypes.length);
-        const type = this.obstacleTypes[typeIndex];
+            worldPos = { x: worldPosX, y: worldPosY };
 
-        // Get sprite for this obstacle type from atlas
-        const spriteName = `${type}.png`;
-        const sprite = obstacleAtlas.getSprite(spriteName);
+            // Choose a random obstacle type
+            const typeIndex = Math.floor(Math.random() * this.obstacleTypes.length);
+            const type = this.obstacleTypes[typeIndex];
 
-        if (!sprite) {
-            console.error(`Could not find sprite for obstacle type: ${type}`);
-            return;
+            // Get sprite for this obstacle type from atlas
+            const spriteName = `${type}.png`;
+            const sprite = obstacleAtlas.getSprite(spriteName);
+
+            if (!sprite) {
+                console.error(`Could not find sprite for obstacle type: ${type}`);
+                return;
+            }
+
+            // Create a temporary obstacle to check for collisions
+            obstacle = new Obstacle(worldPos, type, sprite);
+            const newHitbox = obstacle.getCollisionHitbox();
+            
+            // Check if this obstacle would collide with any existing obstacles
+            validPositionFound = true; // Assume valid until proven otherwise
+            
+            for (const existingObstacle of this.staticObstacles) {
+                const existingHitbox = existingObstacle.getCollisionHitbox();
+                
+                if (this.doHitboxesOverlap(newHitbox, existingHitbox)) {
+                    // Collision detected, this position is not valid
+                    validPositionFound = false;
+                    if (this.debug) {
+                        console.debug(`Collision detected when spawning ${type}, trying another position...`);
+                    }
+                    break;
+                }
+            }
+            
+            attempts++;
         }
 
-        // Create the obstacle using the Obstacle class
-        const obstacle = new Obstacle(worldPos, type, sprite);
-
-        // Add to obstacles array
-        this.staticObstacles.push(obstacle);
-        
-        // Debug logging
-        console.debug(`Spawned ${type} obstacle at x:${worldPos.x.toFixed(2)}, y:${worldPos.y.toFixed(2)}, player y:${playerWorldPos.y.toFixed(2)}, distance ahead: ${(worldPos.y - playerWorldPos.y).toFixed(2)}`);
-        console.debug(`Total obstacles: ${this.staticObstacles.length}`);
+        // Only add the obstacle if we found a valid position
+        if (validPositionFound && obstacle) {
+            // Add to obstacles array
+            this.staticObstacles.push(obstacle);
+            
+            // Debug logging
+            console.debug(`Spawned ${obstacle.type} obstacle at x:${worldPos!.x.toFixed(2)}, y:${worldPos!.y.toFixed(2)}, player y:${playerWorldPos.y.toFixed(2)}, distance ahead: ${(worldPos!.y - playerWorldPos.y).toFixed(2)}`);
+            console.debug(`Total obstacles: ${this.staticObstacles.length}`);
+        } else if (this.debug) {
+            console.debug(`Failed to find valid position for obstacle after ${attempts} attempts`);
+        }
     }
 
     /**
@@ -444,5 +478,18 @@ export class EntityManager {
     public getCollisionHitboxForEntity(entity: GameEntity): CollisionHitbox {
         // Entities now handle their own collision hitboxes
         return entity.getCollisionHitbox();
+    }
+
+    /**
+     * Check if two collision hitboxes overlap
+     */
+    private doHitboxesOverlap(hitbox1: CollisionHitbox, hitbox2: CollisionHitbox): boolean {
+        // Check for intersection using axis-aligned bounding box (AABB) algorithm
+        return (
+            hitbox1.position.x - hitbox1.width / 2 < hitbox2.position.x + hitbox2.width / 2 &&
+            hitbox1.position.x + hitbox1.width / 2 > hitbox2.position.x - hitbox2.width / 2 &&
+            hitbox1.position.y - hitbox1.height / 2 < hitbox2.position.y + hitbox2.height / 2 &&
+            hitbox1.position.y + hitbox1.height / 2 > hitbox2.position.y - hitbox2.height / 2
+        );
     }
 }

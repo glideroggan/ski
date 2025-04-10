@@ -371,7 +371,7 @@ export class SkierUpdater {
         this.collisionCount++;
 
         // Different effects based on collision count and obstacle type
-        if (this.collisionCount >= 4 && this.skierData.type === 'player') {
+        if (this.collisionCount >= 3 && this.skierData.type === 'player') {
             // On fourth collision, transition to flying state (player only)
             this.transitionToFlyingState();
         } else {

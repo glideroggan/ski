@@ -1,5 +1,5 @@
 import p5 from 'p5';
-import { Game, Touch } from './game';
+import { Game, GameState, Touch } from './game';
 import { InputHandler } from './inputHandler';
 import { WeatherState } from './weather/weatherSystem';
 
@@ -113,6 +113,11 @@ export class GameControls {
         // One-time key actions
         if (this.p.keyCode === 32) { // SPACE for pause
             this.game.togglePause();
+        } else if (this.p.key === 'r' || this.p.key === 'R') {
+            // Restart game when in game over state
+            if (this.game.getGameState() === GameState.GAME_OVER) {
+                this.game.resetGame();
+            }
         } else if (this.p.key === 'd' || this.p.key === 'D') {
             this.game.toggleDebug();
         }

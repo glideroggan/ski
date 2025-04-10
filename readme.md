@@ -5,6 +5,9 @@ The game area should scroll itself and player controls the character to left and
 Can also increase their speed by pressing down
 
 # BUGS
+- menu showing distance covered needs adjustments, we should calculate meter better
+- menu showing number of crashes, which is not needed
+- skiier left falling is offsetted badly in the sprite
 - We should fix Obstacle interface, it should be a class
   or not exists at all, it could be an interface instead and each creation of an actual obstacle, could be the tree, snowman or rock, could be sharing the logic....
   Take a look at entityManager.ts:293

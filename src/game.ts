@@ -58,6 +58,10 @@ export class Game {
   // Game controls instance
   private gameControls: GameControls;
 
+  // Track time since crash to show game over screen after a short delay
+  private crashedTimeCounter: number = 0;
+  private readonly gameOverDelay: number = 60; // Show game over screen after 1 second (60 frames at 60fps)
+
   constructor(p: p5) {
     this.p = p;
     this.loadAssets();
@@ -115,13 +119,16 @@ export class Game {
     // This ensures we can detect unpause key presses
     this.gameControls.update();
 
-    // Only update game elements if the game is not paused
-    if (!this.isPaused) {
+    // Only update game elements if the game is not paused and not game over
+    if (!this.isPaused && this.gameState !== GameState.GAME_OVER) {
       // Update the difficulty manager
       this.difficultyManager.update();
 
       // Update player entity
       this.player.update();
+
+      // Check for game over conditions
+      this.checkGameOverConditions();
 
       // Update weather system
       this.weatherSystem.update();
@@ -144,6 +151,40 @@ export class Game {
       this.collisionSystem.update(collidables);
     }
   }
+
+  // Check if game over conditions are met
+  private checkGameOverConditions(): void {
+    // Check if player is currently in a crashed state
+    if (this.player.isCrashed()) {
+      // Increment crash timer
+      this.crashedTimeCounter++;
+      
+      // Wait for the delay before showing game over screen
+      if (this.crashedTimeCounter >= this.gameOverDelay) {
+        this.setGameOver();
+        return;
+      }
+    } else {
+      // Reset timer if player is not crashed
+      this.crashedTimeCounter = 0;
+    }
+  
+    // Or when player has completed the trail (100% progress)
+    const trailProgress = this.difficultyManager.getTrailProgress();
+    if (trailProgress >= 100) {
+      this.setGameOver();
+      return;
+    }
+  }
+
+  // Set the game state to game over
+  public setGameOver(): void {
+    if (this.gameState !== GameState.GAME_OVER) {
+      this.gameState = GameState.GAME_OVER;
+      console.debug("Game over!");
+    }
+  }
+
   public toggleDebug(): void {
     this.debug = !this.debug;
     this.entityManager.toggleDebug();
@@ -172,10 +213,17 @@ export class Game {
     // Render weather effects AFTER everything else
     this.weatherSystem.render();
 
-    // Show pause indicator
+    // Show pause indicator if paused
     if (this.isPaused) {
       this.renderPauseIndicator();
-    }    // Show debug info for obstacles
+    }
+
+    // Show game over screen if game is over
+    if (this.gameState === GameState.GAME_OVER) {
+      this.renderGameOverScreen();
+    }
+
+    // Show debug info for obstacles
     if (this.debug) {
       this.p.fill(255);
       this.p.textSize(12);
@@ -184,9 +232,7 @@ export class Game {
       this.p.text(`AI Skiers: ${this.entityManager.getAISkierCount()}`, 10, 30);
       this.p.text(`Weather: ${WeatherState[this.weatherSystem.getCurrentWeatherState()]}`, 10, 290);
       this.p.text(`Visibility: ${(100 - this.weatherSystem.getVisibilityFactor() * 100).toFixed(0)}%`, 10, 310);
-
-      // Remove duplicate difficulty info from debug display
-      // We'll keep it in the dedicated difficulty indicator only
+      this.p.text(`Crash Count: ${this.player.getCrashCount()}`, 10, 50);
     }
 
     // Display controls information
@@ -324,19 +370,71 @@ export class Game {
     this.p.text("Press SPACE to resume", this.p.width / 2, this.p.height / 2 + 40);
   }
 
-  // Start game from menu state
-  // private startGame(): void {
-  //   this.gameState = GameState.PLAYING;
-  //   this.isPaused = false;
-  //   this.p.loop(); // Ensure game is running
-  //   console.debug("Game started");
-  // }
+  // Show game over screen with menu
+  private renderGameOverScreen(): void {
+    // Semi-transparent dark overlay
+    this.p.fill(0, 0, 0, 150);
+    this.p.rect(0, 0, this.p.width, this.p.height);
+    
+    // Game over message depends on whether player crashed or completed the run
+    const trailProgress = this.difficultyManager.getTrailProgress();
+    const messageTitle = trailProgress >= 100 ? "RUN COMPLETED!" : "CRASHED!";
+    
+    // Create menu container
+    const menuWidth = 300;
+    const menuHeight = 200;
+    const menuX = this.p.width / 2 - menuWidth / 2;
+    const menuY = this.p.height / 2 - menuHeight / 2;
+    
+    // Draw menu background
+    this.p.fill(50, 50, 50, 230);
+    this.p.rect(menuX, menuY, menuWidth, menuHeight, 10);
+    this.p.stroke(255);
+    this.p.strokeWeight(2);
+    this.p.noFill();
+    this.p.rect(menuX + 5, menuY + 5, menuWidth - 10, menuHeight - 10, 8);
+    this.p.noStroke();
+    
+    // Draw title
+    this.p.fill(255);
+    this.p.textSize(28);
+    this.p.textAlign(this.p.CENTER, this.p.CENTER);
+    this.p.text(messageTitle, this.p.width / 2, menuY + 50);
+    
+    // Draw stats
+    this.p.textSize(16);
+    this.p.text(`Distance: ${Math.floor(this.player.worldPos.y)} meters`, this.p.width / 2, menuY + 85);
+    this.p.text(`Crashes: ${this.player.getCrashCount()}`, this.p.width / 2, menuY + 110);
+    
+    // Draw restart button
+    const buttonWidth = 150;
+    const buttonHeight = 40;
+    const buttonX = this.p.width / 2 - buttonWidth / 2;
+    const buttonY = menuY + menuHeight - 60;
+    
+    // Button background
+    this.p.fill(70, 130, 180);
+    this.p.rect(buttonX, buttonY, buttonWidth, buttonHeight, 5);
+    
+    // Button text
+    this.p.fill(255);
+    this.p.textSize(18);
+    this.p.text("RESTART (R)", this.p.width / 2, buttonY + buttonHeight / 2);
+  }
+
+  // Get the current game state
+  public getGameState(): GameState {
+    return this.gameState;
+  }
 
   // Reset game after game over
   public resetGame(): void {
     // Reset player position
     this.player = new Player(this.p, { x: 0, y: 0 }, this);
 
+    // Create a new entity manager to clear all existing entities
+    this.entityManager = new EntityManager(this.p, this);
+    
     // Create a new difficulty manager
     this.difficultyManager = new DifficultyManager(this);
 

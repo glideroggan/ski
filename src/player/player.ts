@@ -9,6 +9,9 @@ import { ICollidable } from '../collision/ICollidable';
  * Player-specific implementation of the SkierEntity
  */
 export class Player extends SkierEntity {
+    // Track total crash count for game over condition
+    private crashCount: number = 0;
+    
     constructor(p: p5, pos: Position, game: Game) {
         // Call base constructor with 'player' type and variant 1
         super(p, pos, game, 'player', 1);
@@ -142,5 +145,33 @@ export class Player extends SkierEntity {
      */
     public turnRight(): boolean {
         return this.updater.turnRight();
+    }
+    
+    /**
+     * Override handleCollision to track crash count
+     */
+    public handleCollision(other: ICollidable): void {
+        // Call base method to handle the collision
+        super.handleCollision(other);
+        
+        // If player is now in a crashed state, increment the crash counter
+        if (this.getCurrentState() === SkierState.CRASHED) {
+            this.crashCount++;
+            console.debug(`Player crash count increased to ${this.crashCount}`);
+        }
+    }
+    
+    /**
+     * Get the total number of times the player has crashed
+     */
+    public getCrashCount(): number {
+        return this.crashCount;
+    }
+    
+    /**
+     * Reset the crash count (used when restarting the game)
+     */
+    public resetCrashCount(): void {
+        this.crashCount = 0;
     }
 }
