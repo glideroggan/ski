@@ -196,29 +196,28 @@ export class SkierUpdater {
     }
 
     private updateSkiTracks(): void {
-        // Only player entities leave ski tracks
-        if (this.skierData.type === 'player' && 
-            this.skierData.currentState !== SkierState.CRASHED && 
-            !this.isFlying()) {
-                
-            // Get the current sprite from the data
-            const currentSprite = this.skierData.sprites.get(this.skierData.currentState);
-            
-            if (!currentSprite) {
-                return;
-            }
-            
-            // Calculate position at the bottom center of the sprite bounding box
-            const trackX = this.skierData.worldPos.x;
-            let trackY = this.skierData.worldPos.y;
-            
-            // Always apply the height adjustment
-            trackY -= this.skierData.currentVisualHeight;
-            trackY += currentSprite.spriteHeight / 2;
-            
-            // Add the ski track point
-            this.skierData.game.skiTrack.addPoint(trackX, trackY);
+        // Skip track generation if crashed or flying
+        if (this.skierData.currentState === SkierState.CRASHED || this.isFlying()) {
+            return;
         }
+                
+        // Get the current sprite from the data
+        const currentSprite = this.skierData.sprites.get(this.skierData.currentState);
+        
+        if (!currentSprite) {
+            return;
+        }
+        
+        // Calculate position at the bottom center of the sprite bounding box
+        const trackX = this.skierData.worldPos.x;
+        let trackY = this.skierData.worldPos.y;
+        
+        // Apply height adjustment to track position
+        trackY -= this.skierData.currentVisualHeight;
+        trackY += currentSprite.spriteHeight / 2;
+        
+        // Add the ski track point to this skier's own track
+        this.skierData.skiTrack.addPoint(trackX, trackY);
     }
 
     private updateTerrainEffects(): void {

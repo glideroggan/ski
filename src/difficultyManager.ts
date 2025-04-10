@@ -12,7 +12,7 @@ export class DifficultyManager {
   private game: Game;
     // Trail progress from 0 to 100
   private trailProgress: number = 0; // Start at beginning of trail
-  private trailLength: number = 10000; // Arbitrary distance units for the trail
+  private trailLength: number = 30000; // Increased from 10000 to make the race longer
   private trailCompleted: boolean = false;
   private furthestYPosition: number = 0; // Track the player's furthest position down the slope
   

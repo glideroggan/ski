@@ -275,4 +275,17 @@ export class AISkier extends SkierEntity {
         this.skierData.currentState = SkierState.CRASHED;
         this.horizontalFactor = 0;
     }
+
+    /**
+     * Override the render method to ensure debug hitboxes are shown for AI skiers
+     */
+    public render(p: p5, game: Game): void {
+        // Call the base render method to draw the skier
+        super.render(p, game);
+        
+        // Enable debug mode for skierData if game debug is enabled
+        if (game.debug) {
+            this.skierData.debug = true;
+        }
+    }
 }

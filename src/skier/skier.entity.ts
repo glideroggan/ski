@@ -5,6 +5,7 @@ import { Sprite } from '../sprite';
 import { CollisionHitbox, ICollidable } from '../collision/ICollidable';
 import { SkierRenderer } from './skier.renderer';
 import { SkierUpdater } from './skier.updater';
+import { SkiTrack } from './skiTrack';
 
 /**
  * Shared enum for all skier states
@@ -39,6 +40,7 @@ export class SkierData {
     assetsLoaded: boolean = false;
     // Type of skier entity for collision detection
     type: EntityType;
+    skiTrack: SkiTrack;
 
     // Visual properties
     currentVisualHeight: number = 0;
@@ -50,7 +52,7 @@ export class SkierData {
     collisionEffect: number = 0;
     currentSpeed: number = 4;
     speedOffset: number = 0;
-    speedTransitionFactor: number = 0.1;
+    speedTransitionFactor: number = 0.04; // Reduced from 0.1 for smoother transitions
 
     variantType: number = 1; // Variant type for different skier appearances
 
@@ -62,6 +64,7 @@ export class SkierData {
         this.game = game;
         this.worldPos = pos;
         this.type = type;
+        this.skiTrack = new SkiTrack(p);
     }
 
     /**
@@ -143,6 +146,17 @@ export abstract class SkierEntity implements RenderableObject, ICollidable {
      */
     public render(p: p5, game: Game): void {
         this.renderer.render(p, game);
+    }
+
+    /**
+     * Render just the ski tracks for this entity
+     * This is separated from the main render method to allow rendering tracks
+     * before all dynamic entities, ensuring proper layering
+     */
+    public renderSkiTracksOnly(p: p5, game: Game): void {
+        if (this.skierData.skiTrack) {
+            this.skierData.skiTrack.render(p, (pos) => game.camera.worldToScreen(pos));
+        }
     }
 
     /**

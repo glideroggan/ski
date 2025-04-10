@@ -1,20 +1,25 @@
-import p5 from "p5";
-import { Game } from "./game";
+import p5 from 'p5';
+import { Position } from '../camera';
 
+/**
+ * Represents the ski tracks left behind by a skier
+ */
 export class SkiTrack {
-    points: { x: number, y: number, alpha: number, entityType?: string }[] = [];
-    maxPoints: number = 300; // Increased from 100 to 300 to accommodate multiple skiers
-    game: Game;
-    private lastAddedDistance: number = 0;
+    private points: { x: number, y: number, alpha: number }[] = [];
+    private maxPoints: number = 100; // Maximum number of track points to store
     private minSpacing: number = 15; // Minimum distance between track points
+    private p: p5;
+    private trackWidth: number = 5; // Distance between the two ski lines
+    private fadeRate: number = 0.8; // How quickly tracks fade out
 
-    constructor(game: Game) {
-        this.game = game;
+    constructor(p: p5) {
+        this.p = p;
     }
 
-    addPoint(worldX: number, worldY: number, entityType: string = 'player'): void {
-        if (!this.game.backgroundImage) return;
-        
+    /**
+     * Add a new track point
+     */
+    public addPoint(worldX: number, worldY: number): void {
         if (this.points.length > 0) {
             // Calculate distance from last point to avoid too many points
             const lastPoint = this.points[this.points.length - 1];
@@ -32,8 +37,7 @@ export class SkiTrack {
         this.points.push({
             x: worldX,
             y: worldY,
-            alpha: 200, // Start with slightly lower alpha for more natural look
-            entityType: entityType // Track which entity created this point
+            alpha: 200 // Start with slightly lower alpha for more natural look
         });
         
         // Remove oldest points if we exceed the maximum
@@ -42,8 +46,11 @@ export class SkiTrack {
         }
     }
 
-    render(p: p5): void {
-        if (this.points.length < 2 || !this.game.backgroundImage) return;
+    /**
+     * Render the ski tracks
+     */
+    public render(p: p5, worldToScreen: (pos: Position) => Position): void {
+        if (this.points.length < 2) return;
         
         p.noFill();
         p.strokeWeight(2);
@@ -60,22 +67,16 @@ export class SkiTrack {
             // Only draw if points are reasonably close (prevents long lines)
             if (distance < 50) {
                 // Convert world coordinates to screen coordinates
-                const screenPos = this.game.camera.worldToScreen(point);
-                const prevScreenPos = this.game.camera.worldToScreen(prevPoint);
+                const screenPos = worldToScreen(point);
+                const prevScreenPos = worldToScreen(prevPoint);
                 
                 // Calculate proper angle for parallel ski tracks
                 const angle = Math.atan2(dy, dx);
-                const perpX = Math.cos(angle + Math.PI/2) * 5;
-                const perpY = Math.sin(angle + Math.PI/2) * 5;
+                const perpX = Math.cos(angle + Math.PI/2) * this.trackWidth;
+                const perpY = Math.sin(angle + Math.PI/2) * this.trackWidth;
                 
-                // Set color based on entity type
-                if (point.entityType === 'aiSkier') {
-                    // Light blue for AI skiers
-                    p.stroke(200, 220, 255, point.alpha);
-                } else {
-                    // White for player
-                    p.stroke(255, 255, 255, point.alpha);
-                }
+                // Draw tracks with the current alpha value
+                p.stroke(255, 255, 255, point.alpha);
                 
                 // Left ski track
                 p.line(
@@ -94,26 +95,18 @@ export class SkiTrack {
                 );
             }
             
-            // Fade out tracks over time (slower fade to make tracks last longer)
-            point.alpha = Math.max(0, point.alpha - 0.8); // Reduced from 1.5 to 0.8
+            // Fade out tracks over time
+            point.alpha = Math.max(0, point.alpha - this.fadeRate);
         }
 
         // Clean up points with zero alpha to save memory
         this.points = this.points.filter(point => point.alpha > 0);
-        
-        if (this.game.debug) {
-            p.fill(255, 255, 0);
-            p.noStroke();
-            p.textAlign(p.LEFT, p.TOP);
-            p.text(`Track points: ${this.points.length}`, 10, 110);
-
-            // Draw debug points at each ski track point
-            p.noFill();
-            p.stroke(255, 255, 0, 100);
-            for (const point of this.points) {
-                const screenPos = this.game.camera.worldToScreen(point);
-                p.ellipse(screenPos.x, screenPos.y, 5, 5);
-            }
-        }
+    }
+    
+    /**
+     * Get the number of track points
+     */
+    public getPointCount(): number {
+        return this.points.length;
     }
 }

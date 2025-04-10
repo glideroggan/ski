@@ -63,16 +63,6 @@ export class Obstacle implements RenderableObject, ICollidable {
         // Convert world position to screen position
         const screenPos = game.camera.worldToScreen(this.worldPos);
 
-        // Don't render if off-screen
-        if (
-            screenPos.x < -this.width ||
-            screenPos.x > p.width + this.width ||
-            screenPos.y < -this.height ||
-            screenPos.y > p.height + this.height
-        ) {
-            return;
-        }
-
         // Render the sprite
         if (this.sprite) {
             this.sprite.render(screenPos.x, screenPos.y, this.width, this.height);

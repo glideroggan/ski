@@ -44,9 +44,9 @@ export class EntityManager {
 
     // Spawning properties
     private obstacleSpawnCounter: number = 0;
-    private baseObstacleSpawnInterval: number = 60; // Base spawn rate (1 per second at 60 FPS)
+    private baseObstacleSpawnInterval: number = 50; // Reduced from 60 to spawn obstacles more frequently
     private aiSkierSpawnTimer: number = 0;
-    private aiSkierSpawnInterval: number = 180; // Base spawn interval for AI skiers (3 seconds at 60 FPS)
+    private aiSkierSpawnInterval: number = 360; // Increased from 180 to reduce AI skier frequency
 
     // Gameplay properties
     private temporarySpeedBoost: boolean = false;
@@ -143,6 +143,15 @@ export class EntityManager {
     public getAISkiers(): AISkier[] {
         return this.aiSkiers;
     }
+
+    /**
+     * Returns all entities that are skiers (AI skiers)
+     * This is used specifically for ski track rendering
+     */
+    public getAllSkierEntities(): AISkier[] {
+        return this.aiSkiers;
+    }
+
     /**
      * Updates all entities in the game
      */
@@ -361,9 +370,9 @@ export class EntityManager {
         // x is random across the width, y is ahead of the player, in world coordinates
         const worldPosX = playerWorldPos.x + (Math.random() * screenWidth - screenWidth / 2);
         
-        // Place obstacles ahead of the player (0.5-1.5 screen heights BELOW the player)
-        // This gives the player time to see and react to them
-        const distanceAhead = screenHeight * (0.5 + Math.random());
+        // Place obstacles ahead of the player (1.0-2.0 screen heights BELOW the player)
+        // Increased from 0.5-1.5 to prevent "popping in" appearance
+        const distanceAhead = screenHeight * (1.0 + Math.random());
         const worldPosY = playerWorldPos.y + distanceAhead; // ADD to player Y to place BELOW the player
 
         const worldPos = { x: worldPosX, y: worldPosY };

@@ -13,6 +13,9 @@ export class SkierRenderer {
     }
 
     render(p: p5, game: Game): void {
+        // We no longer render ski tracks here - they are rendered separately
+        // before all dynamic objects in the game's renderAllSkiTracks method
+        
         if (!this.skierData.assetsLoaded || this.skierData.sprites.size === 0) {
             // Skip rendering if assets aren't loaded
             return;
@@ -109,6 +112,10 @@ export class SkierRenderer {
             p.fill(0, 255, 255);
             p.text(`Terrain bumpy: ${terrainHeight.toFixed(3)}`, 10, 250);
             p.text(`Slope angle: ${(slope.angle * 180 / Math.PI).toFixed(1)}°`, 10, 270);
+            
+            // Show track info
+            p.fill(255, 200, 200);
+            p.text(`Track points: ${this.skierData.skiTrack.getPointCount()}`, 200, 210);
         }
     }
 

@@ -35,6 +35,7 @@ export interface Touch {
 
 export class Game {
   private p: p5;
+  debug: boolean = false;
   weatherSystem: WeatherSystem;
   difficultyManager: DifficultyManager; // Add the difficulty manager
   private weatherState: WeatherState = WeatherState.CLEAR;
@@ -49,10 +50,6 @@ export class Game {
 
   private assetsLoaded: boolean = false;
   private assetsLoadingFailed: boolean = false;
-  skiTrack: SkiTrack;
-  public debug: boolean = false;
-  backgroundY: number = 0;
-  backgroundX: number = 0;
   camera: Camera;
   world: World;
   private collisionSystem: CollisionSystem; // Only the new collision system
@@ -73,7 +70,6 @@ export class Game {
     this.difficultyManager = new DifficultyManager(this);
     
     this.entityManager = new EntityManager(this.p, this);
-    this.skiTrack = new SkiTrack(this);
     this.collisionSystem = new CollisionSystem(this); // Initialize only the new collision system
     this.weatherSystem = new WeatherSystem(this.p, this);
 
@@ -170,9 +166,6 @@ export class Game {
 
     this.world.render()
 
-    // Render ski tracks BEFORE player and obstacles so they appear underneath
-    this.skiTrack.render(this.p);
-
     // render objects based on their depth
     this.renderDynamicObjects();
 
@@ -199,7 +192,11 @@ export class Game {
     // Display controls information
     this.renderControlsInfo();
   }
+
   private renderDynamicObjects(): void {
+    // First render all ski tracks which should always be on the ground
+    this.renderAllSkiTracks();
+    
     // Create a combined array of all renderable objects including the player
     const allRenderableObjects: RenderableObject[] = [
       ...this.entityManager.getAllEntities(),
@@ -213,6 +210,24 @@ export class Game {
     // Render all objects in the sorted order
     for (const obj of allRenderableObjects) {
       obj.render(this.p, this);
+    }
+  }
+
+  /**
+   * Renders all ski tracks from all entities (player and AI skiers)
+   * Ski tracks should always be rendered before entities for proper layering
+   */
+  private renderAllSkiTracks(): void {
+    // Render player ski tracks
+    this.player.renderSkiTracksOnly(this.p, this);
+
+    // Render AI skier tracks using the EntityManager
+    const aiSkiers = this.entityManager.getAllSkierEntities();
+    
+    for (const skier of aiSkiers) {
+      if ('renderSkiTracksOnly' in skier && typeof skier.renderSkiTracksOnly === 'function') {
+        skier.renderSkiTracksOnly(this.p, this);
+      }
     }
   }
 
@@ -310,23 +325,17 @@ export class Game {
   }
 
   // Start game from menu state
-  private startGame(): void {
-    this.gameState = GameState.PLAYING;
-    this.isPaused = false;
-    this.p.loop(); // Ensure game is running
-    console.debug("Game started");
-  }
+  // private startGame(): void {
+  //   this.gameState = GameState.PLAYING;
+  //   this.isPaused = false;
+  //   this.p.loop(); // Ensure game is running
+  //   console.debug("Game started");
+  // }
 
   // Reset game after game over
   public resetGame(): void {
     // Reset player position
     this.player = new Player(this.p, { x: 0, y: 0 }, this);
-
-    // Create a new obstacle manager which will load its own assets
-    // this.obstacleManager = new ObstacleManager(this.p, this);
-
-    // Reset ski tracks
-    this.skiTrack = new SkiTrack(this);
 
     // Create a new difficulty manager
     this.difficultyManager = new DifficultyManager(this);
@@ -334,8 +343,6 @@ export class Game {
     // Reset game state
     this.gameState = GameState.PLAYING;
     this.isPaused = false;
-    this.backgroundY = 0;
-    this.backgroundX = 0;
 
     this.p.loop(); // Ensure game is running
     console.debug("Game reset");
