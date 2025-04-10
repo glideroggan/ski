@@ -5,9 +5,9 @@ import { Position } from './camera';
 import { GameEntity } from './entityManager';
 
 export enum AISkierType {
-  FAST_VERTICAL, // Starts behind player, moves faster and passes
-  SLOW_VERTICAL, // Starts ahead of player, moves slower and gets passed
-  HORIZONTAL     // Crosses the slope horizontally
+  FAST_VERTICAL, // Moves faster than player (overtaking)
+  SLOW_VERTICAL, // Moves slower than player (gets passed)
+  HORIZONTAL     // Moves sideways across the slope
 }
 
 /**
@@ -15,30 +15,45 @@ export enum AISkierType {
  */
 export class AISkier extends SkierEntity {
     private skierType: AISkierType;
-    private horizontalSpeed: number;
     private avoidanceRange: number = 150; // How far ahead the AI looks for obstacles
+    private horizontalFactor: number = 0; // Factor for horizontal movement (-1 to 1)
     
     constructor(
         p: p5,
         worldPos: Position,
         skierType: AISkierType,
         game: Game,
-        speed: number,
+        baseSpeed: number,
         variantType: number = 2 // Default to skiier2 variant
     ) {
         // Call base constructor with 'aiSkier' type and the specified variant
         super(p, worldPos, game, 'aiSkier', variantType);
         
         this.skierType = skierType;
-        this.skierData.currentSpeed = speed;
         
-        // Set initial state and speed based on skier type
-        if (skierType === AISkierType.HORIZONTAL) {
-            this.skierData.currentState = Math.random() > 0.5 ? SkierState.RIGHT : SkierState.LEFT;
-            this.horizontalSpeed = speed * (Math.random() > 0.5 ? 1 : -1); // Horizontal speed (right or left)
+        // Set initial speed based on skier type relative to the player's speed
+        if (skierType === AISkierType.FAST_VERTICAL) {
+            // Faster than baseSpeed (typically player's speed)
+            this.skierData.currentSpeed = baseSpeed * 1.3;
+            this.horizontalFactor = 0; // Primarily vertical
+        } else if (skierType === AISkierType.SLOW_VERTICAL) {
+            // Slower than baseSpeed
+            this.skierData.currentSpeed = baseSpeed * 0.7;
+            this.horizontalFactor = 0; // Primarily vertical
+        } else if (skierType === AISkierType.HORIZONTAL) {
+            // Similar speed but mostly horizontal movement
+            this.skierData.currentSpeed = baseSpeed * 0.8;
+            // Random horizontal direction (left or right)
+            this.horizontalFactor = Math.random() > 0.5 ? 0.8 : -0.8;
+        }
+        
+        // Set initial state based on movement direction
+        if (this.horizontalFactor > 0.3) {
+            this.skierData.currentState = SkierState.RIGHT_DOWN;
+        } else if (this.horizontalFactor < -0.3) {
+            this.skierData.currentState = SkierState.LEFT_DOWN;
         } else {
             this.skierData.currentState = SkierState.DOWN;
-            this.horizontalSpeed = 0;
         }
     }
     
@@ -103,32 +118,22 @@ export class AISkier extends SkierEntity {
     /**
      * Override update method for AI-specific behavior
      */
-    public update(scrollSpeed: number = 0, horizontalOffset: number = 0): void {
+    public update(): void {
         // If assets aren't loaded yet, try loading them
         if (!this.skierData.assetsLoaded) {
             this.loadAssets(this.skierData.variantType || 2);
             return;
         }
         
-        // Apply vertical movement based on skier type and game scroll speed
-        let effectiveScrollSpeed = scrollSpeed;
-        
-        if (this.skierType === AISkierType.FAST_VERTICAL) {
-            // Move faster than scroll speed (overtake player)
-            effectiveScrollSpeed = scrollSpeed;
-        } else if (this.skierType === AISkierType.SLOW_VERTICAL) {
-            // Move slower than scroll speed (get passed by player)
-            effectiveScrollSpeed = scrollSpeed;
-            this.skierData.currentSpeed *= 0.5; // Slow down
-        }
-        
-        // Call base update with AI-specific scroll speed
-        super.update(effectiveScrollSpeed, this.horizontalSpeed);
+        // Call base update without passing scrollSpeed
+        // The horizontalFactor will be used internally by updateAIMovement
+        super.update();
         
         // Update AI behavior after basic movement is applied
         this.updateAIBehavior();
     }
-      /**
+    
+    /**
      * AI-specific behavior logic
      */
     private updateAIBehavior(): void {
@@ -136,6 +141,9 @@ export class AISkier extends SkierEntity {
         if (this.skierData.currentState === SkierState.CRASHED) {
             return;
         }
+        
+        // Apply AI movement logic based on current state and type
+        this.updateAIMovement();
         
         // Simple obstacle avoidance - check for obstacles ahead
         // Get all entities from the entityManager
@@ -171,50 +179,91 @@ export class AISkier extends SkierEntity {
             // Avoid the obstacle by turning away from it
             if (closestObstacle.worldPos.x < this.skierData.worldPos.x) {
                 // Obstacle is to the left, move right
-                this.horizontalSpeed = Math.abs(this.horizontalSpeed || this.skierData.currentSpeed * 0.3);
+                this.horizontalFactor = 0.5;
                 this.skierData.currentState = SkierState.RIGHT_DOWN;
             } else {
                 // Obstacle is to the right, move left
-                this.horizontalSpeed = -Math.abs(this.horizontalSpeed || this.skierData.currentSpeed * 0.3);
+                this.horizontalFactor = -0.5;
                 this.skierData.currentState = SkierState.LEFT_DOWN;
             }
         } else {
-            // Return to normal state if no obstacles
-            if (this.skierType === AISkierType.HORIZONTAL) {
-                // Maintain horizontal movement
-                if (this.horizontalSpeed > 0) {
-                    this.skierData.currentState = SkierState.RIGHT_DOWN;
-                } else {
-                    this.skierData.currentState = SkierState.LEFT_DOWN;
-                }
-            } else {
-                // For vertical skiers, occasionally change direction randomly
-                if (Math.random() < 0.01) { // 1% chance per frame to change direction
-                    const direction = Math.floor(Math.random() * 3) - 1; // -1, 0, or 1
-                    
-                    if (direction === -1) {
-                        this.skierData.currentState = SkierState.LEFT_DOWN;
-                        this.horizontalSpeed = -Math.abs(this.skierData.currentSpeed) * 0.3;
-                    } else if (direction === 1) {
-                        this.skierData.currentState = SkierState.RIGHT_DOWN;
-                        this.horizontalSpeed = Math.abs(this.skierData.currentSpeed) * 0.3;
-                    } else {
-                        this.skierData.currentState = SkierState.DOWN;
-                        this.horizontalSpeed = 0;
-                    }
-                }
-            }
+            // Return to normal behavior if no obstacles
+            this.resetToDefaultBehavior();
         }
         
         // Bounds checking - prevent AI skiers from going too far off-screen
+        this.doBoundaryCheck();
+    }
+    
+    /**
+     * Updates AI movement based on its type and current state
+     */
+    private updateAIMovement(): void {
+        // Update skier state based on horizontal factor
+        if (this.horizontalFactor > 0.3) {
+            if (this.horizontalFactor > 0.7) {
+                this.skierData.currentState = SkierState.RIGHT;
+            } else {
+                this.skierData.currentState = SkierState.RIGHT_DOWN;
+            }
+        } else if (this.horizontalFactor < -0.3) {
+            if (this.horizontalFactor < -0.7) {
+                this.skierData.currentState = SkierState.LEFT;
+            } else {
+                this.skierData.currentState = SkierState.LEFT_DOWN;
+            }
+        } else {
+            this.skierData.currentState = SkierState.DOWN;
+        }
+    }
+    
+    /**
+     * Reset AI to default behavior based on its type
+     */
+    private resetToDefaultBehavior(): void {
+        if (this.skierType === AISkierType.HORIZONTAL) {
+            // Maintain strong horizontal bias
+            this.horizontalFactor = Math.abs(this.horizontalFactor) > 0.1 ? 
+                this.horizontalFactor : 
+                (Math.random() > 0.5 ? 0.8 : -0.8);
+                
+            // Update state based on direction
+            if (this.horizontalFactor > 0) {
+                this.skierData.currentState = SkierState.RIGHT_DOWN;
+            } else {
+                this.skierData.currentState = SkierState.LEFT_DOWN;
+            }
+        } else {
+            // For vertical skiers, occasionally change direction randomly
+            if (Math.random() < 0.01) { // 1% chance per frame to change direction
+                const direction = Math.floor(Math.random() * 3) - 1; // -1, 0, or 1
+                
+                if (direction === -1) {
+                    this.horizontalFactor = -0.3;
+                    this.skierData.currentState = SkierState.LEFT_DOWN;
+                } else if (direction === 1) {
+                    this.horizontalFactor = 0.3;
+                    this.skierData.currentState = SkierState.RIGHT_DOWN;
+                } else {
+                    this.horizontalFactor = 0;
+                    this.skierData.currentState = SkierState.DOWN;
+                }
+            }
+        }
+    }
+    
+    /**
+     * Check and handle screen boundaries
+     */
+    private doBoundaryCheck(): void {
         const screenWidth = this.p.width;
         const screenPos = this.skierData.game.camera.worldToScreen(this.skierData.worldPos);
         
         if (screenPos.x < -200) {
-            this.horizontalSpeed = Math.abs(this.horizontalSpeed || this.skierData.currentSpeed * 0.3);
+            this.horizontalFactor = 0.5;
             this.skierData.currentState = SkierState.RIGHT_DOWN;
         } else if (screenPos.x > screenWidth + 200) {
-            this.horizontalSpeed = -Math.abs(this.horizontalSpeed || this.skierData.currentSpeed * 0.3);
+            this.horizontalFactor = -0.5;
             this.skierData.currentState = SkierState.LEFT_DOWN;
         }
     }
@@ -224,6 +273,6 @@ export class AISkier extends SkierEntity {
      */
     public crash(): void {
         this.skierData.currentState = SkierState.CRASHED;
-        this.horizontalSpeed = 0;
+        this.horizontalFactor = 0;
     }
 }

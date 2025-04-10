@@ -134,8 +134,8 @@ export abstract class SkierEntity implements RenderableObject, ICollidable {
     /**
      * Update method to be called each frame
      */
-    public update(scrollSpeed: number = 0, horizontalOffset: number = 0): void {
-        this.updater.update(scrollSpeed, horizontalOffset);
+    public update(): void {
+        this.updater.update();
     }
 
     /**

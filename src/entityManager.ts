@@ -5,25 +5,12 @@ import { Position } from './camera';
 import { SpriteAtlas } from './spriteAtlas';
 import { AISkier, AISkierType } from './aiSkier';
 import { ICollidable, CollisionHitbox } from './collision/ICollidable';
+import { Obstacle, ObstacleType } from './obstacle'; // Import the Obstacle class
 
 // Interface for obstacle dimensions
 export interface ObstacleDimensions {
     width: number;
     height: number;
-}
-
-// Static obstacle types
-export type ObstacleType = 'tree' | 'rock' | 'snowman';
-
-// Interface for static obstacles
-export interface Obstacle extends RenderableObject, ICollidable {
-    worldPos: Position;
-    width: number;
-    height: number;
-    type: ObstacleType;
-    sprite: Sprite | null;
-    render(p: p5, game: Game): void;
-    update(scrollSpeed: number, horizontalOffset: number): void;
 }
 
 // Define collision hitbox offsets for different entity types
@@ -157,15 +144,13 @@ export class EntityManager {
         return this.aiSkiers;
     }
     /**
-     * Update all entities
+     * Updates all entities in the game
      */
     public update(game: Game): void {
-        const scrollSpeed = this.game.difficultyManager.getPlayerSpeed();
+        // Update obstacle spawning and existing obstacles
+        this.updateObstacles();
 
-        // Handle static obstacle spawning and lifecycle
-        this.updateObstacles(scrollSpeed);
-
-        // Handle AI skier spawning and lifecycle
+        // Update AI skier spawning and existing AI skiers
         this.updateAISkiers();
 
         // Remove entities that are too far off-screen
@@ -175,7 +160,7 @@ export class EntityManager {
     /**
      * Update obstacle spawning and movement
      */
-    private updateObstacles(scrollSpeed: number): void {
+    private updateObstacles(): void {
         // Spawn new obstacles
         this.obstacleSpawnCounter++;
 
@@ -190,9 +175,9 @@ export class EntityManager {
             this.obstacleSpawnCounter = 0;
         }
 
-        // Update existing obstacles
+        // Call update on obstacles (allows for any obstacle-specific logic)
         for (const obstacle of this.staticObstacles) {
-            obstacle.update(scrollSpeed, 0);
+            obstacle.update();
         }
     }
 
@@ -210,14 +195,105 @@ export class EntityManager {
         const adjustedSpawnInterval = Math.max(60, this.aiSkierSpawnInterval - (difficultyLevel / 100) * 90);
 
         if (this.aiSkierSpawnTimer >= adjustedSpawnInterval) {
-            this.spawnAISkier();
+            // Spawn a new AI skier
+            this.spawnRandomAISkier();
             this.aiSkierSpawnTimer = 0;
         }
 
         // Update existing AI skiers
-        const scrollSpeed = this.game.difficultyManager.getPlayerSpeed();
         for (const aiSkier of this.aiSkiers) {
-            aiSkier.update(scrollSpeed, 0);
+            aiSkier.update();
+        }
+    }
+
+    /**
+     * Spawns a random AI skier ahead of the player
+     */
+    private spawnRandomAISkier(): void {
+        // Get the player's position
+        const playerWorldPos = this.game.player.worldPos;
+
+        // Calculate screen dimensions for positioning
+        const screenWidth = this.p.width;
+        const screenHeight = this.p.height;
+
+        // Choose a random AI skier type with weighted probabilities
+        const randomValue = Math.random();
+        let aiType: AISkierType;
+        
+        if (randomValue < 0.4) {
+            aiType = AISkierType.FAST_VERTICAL; // 40% chance
+        } else if (randomValue < 0.7) {
+            aiType = AISkierType.SLOW_VERTICAL; // 30% chance
+        } else {
+            aiType = AISkierType.HORIZONTAL; // 30% chance
+        }
+
+        // Calculate spawn position based on AI skier type
+        let worldPos: Position;
+
+        switch (aiType) {
+            case AISkierType.FAST_VERTICAL:
+                // Spawn BEHIND the player so they can overtake
+                const distanceBehind = screenHeight * (0.7 + Math.random() * 0.8); // 0.7-1.5 screen heights behind
+                worldPos = {
+                    x: playerWorldPos.x + (Math.random() * screenWidth * 0.6 - screenWidth * 0.3), // Slightly random X near player
+                    y: playerWorldPos.y - distanceBehind // Behind player (lower Y value)
+                };
+                break;
+                
+            case AISkierType.SLOW_VERTICAL:
+                // Spawn AHEAD of the player so they get passed
+                const distanceAhead = screenHeight * (0.7 + Math.random() * 0.8); // 0.7-1.5 screen heights ahead
+                worldPos = {
+                    x: playerWorldPos.x + (Math.random() * screenWidth * 0.8 - screenWidth * 0.4), // Random X across view
+                    y: playerWorldPos.y + distanceAhead // Ahead of player (higher Y value)
+                };
+                break;
+                
+            case AISkierType.HORIZONTAL:
+                // Spawn on either side of the screen to cross horizontally
+                const side = Math.random() > 0.5 ? 1 : -1; // Left or right side
+                worldPos = {
+                    x: playerWorldPos.x + (side * screenWidth * 0.6), // Start outside view on either side
+                    y: playerWorldPos.y + (screenHeight * 0.3 * (Math.random() - 0.5)) // Near player's vertical position
+                };
+                break;
+                
+            default:
+                // Fallback position just in case
+                worldPos = {
+                    x: playerWorldPos.x + (Math.random() * screenWidth - screenWidth / 2),
+                    y: playerWorldPos.y + screenHeight * 0.5
+                };
+        }
+
+        // Spawn the AI skier with the calculated position and type
+        this.spawnAISkier(worldPos, aiType);
+    }
+
+    /**
+     * Spawns an AI skier at the given position with the specified type
+     */
+    private spawnAISkier(pos: Position, type: AISkierType): void {
+        // Get the player's current speed as a reference for AI skier speed
+        const playerSpeed = this.game.player.getCurrentSpeed();
+        
+        // Create a new AI skier with an appropriate speed relative to the player
+        const aiSkier = new AISkier(
+            this.p,
+            pos,
+            type,
+            this.game,
+            playerSpeed, // Pass player's speed as base speed
+            Math.floor(Math.random() * 3) + 1 // Random variant (1, 2, or 3)
+        );
+        
+        // Add the AI skier to the aiSkiers collection
+        this.aiSkiers.push(aiSkier);
+        
+        if (this.debug) {
+            console.debug(`Spawned AI skier of type ${AISkierType[type]} at position (${pos.x}, ${pos.y})`);
         }
     }
 
@@ -225,17 +301,33 @@ export class EntityManager {
      * Remove entities that are too far off-screen
      */
     private cleanupEntities(): void {
-        // Filter out obstacles that are too far behind or ahead of the player
+        // Get player position and screen dimensions for cleanup
         const playerY = this.game.player.worldPos.y;
-        const viewDistance = this.p.height * 2; // Twice the screen height
-
+        const viewDistance = this.p.height * 3; // Was 2, increased to 3 for wider visible range
+        
+        // Log counts before cleanup for debugging
+        const beforeObstacleCount = this.staticObstacles.length;
+        
         // Clean up static obstacles
         this.staticObstacles = this.staticObstacles.filter(obstacle => {
+            // Distance from player to obstacle
+            const distance = Math.abs(obstacle.worldPos.y - playerY);
             // Keep obstacles that are close to the player's position
-            return Math.abs(obstacle.worldPos.y - playerY) < viewDistance;
+            const shouldKeep = distance < viewDistance;
+            
+            if (!shouldKeep) {
+                console.debug(`Removing obstacle ${obstacle.type} at y:${obstacle.worldPos.y.toFixed(2)}, distance:${distance.toFixed(2)}, player y:${playerY.toFixed(2)}`);
+            }
+            
+            return shouldKeep;
         });
+        
+        // Log how many obstacles were removed
+        if (beforeObstacleCount !== this.staticObstacles.length) {
+            console.debug(`Cleanup removed ${beforeObstacleCount - this.staticObstacles.length} obstacles. ${this.staticObstacles.length} remaining.`);
+        }
 
-        // Clean up AI skiers
+        // Clean up AI skiers using the same view distance
         this.aiSkiers = this.aiSkiers.filter(skier => {
             // Keep skiers that are close to the player's position
             return Math.abs(skier.worldPos.y - playerY) < viewDistance;
@@ -261,14 +353,18 @@ export class EntityManager {
         // Get the player's position
         const playerWorldPos = this.game.player.worldPos;
 
-        // Calculate a random position within the viewport, but ahead of the player
+        // Calculate a random position within the viewport, but AHEAD of the player
         const screenWidth = this.p.width;
         const screenHeight = this.p.height;
 
-        // Calculate a position ahead of the player
+        // Calculate a position ahead of the player (AHEAD = BELOW = HIGHER Y VALUE)
         // x is random across the width, y is ahead of the player, in world coordinates
         const worldPosX = playerWorldPos.x + (Math.random() * screenWidth - screenWidth / 2);
-        const worldPosY = playerWorldPos.y - screenHeight / 2 - Math.random() * screenHeight / 2;
+        
+        // Place obstacles ahead of the player (0.5-1.5 screen heights BELOW the player)
+        // This gives the player time to see and react to them
+        const distanceAhead = screenHeight * (0.5 + Math.random());
+        const worldPosY = playerWorldPos.y + distanceAhead; // ADD to player Y to place BELOW the player
 
         const worldPos = { x: worldPosX, y: worldPosY };
 
@@ -285,183 +381,15 @@ export class EntityManager {
             return;
         }
 
-        // Get the dimensions for this obstacle type
-        const width = type === 'tree' ? 40 : type === 'rock' ? 50 : 30;
-        const height = type === 'tree' ? 80 : type === 'rock' ? 40 : 60;
-
-        // Create the obstacle object
-        // TODO: shouldn't this be its own class? or does it need
-        const obstacle: Obstacle = {
-            worldPos,
-            width,
-            height,
-            type: type as ObstacleType,
-            sprite,
-
-            render: function (p: p5, game: Game): void {
-                // Convert world position to screen position
-                const screenPos = game.camera.worldToScreen(this.worldPos);
-
-                // Don't render if off-screen
-                if (
-                    screenPos.x < -this.width ||
-                    screenPos.x > p.width + this.width ||
-                    screenPos.y < -this.height ||
-                    screenPos.y > p.height + this.height
-                ) {
-                    return;
-                }
-
-                // Render the sprite
-                if (this.sprite) {
-                    this.sprite.render(screenPos.x, screenPos.y, this.width, this.height);
-                }
-
-                // Debug rendering
-                if (game.debug) {
-                    // Draw the collision hitbox
-                    const hitbox = this.getCollisionHitbox();
-                    const hitboxScreenPos = game.camera.worldToScreen(hitbox.position);
-
-                    p.push();
-                    p.noFill();
-                    p.stroke(255, 0, 0);
-                    p.rect(
-                        hitboxScreenPos.x - hitbox.width / 2,
-                        hitboxScreenPos.y - hitbox.height / 2,
-                        hitbox.width,
-                        hitbox.height
-                    );
-                    p.pop();
-                }
-            },
-
-            update: function (scrollSpeed: number, horizontalOffset: number): void {
-                // Move the obstacle based on scroll speed
-                this.worldPos.y += scrollSpeed;
-
-                // Apply any horizontal offset
-                if (horizontalOffset !== 0) {
-                    this.worldPos.x += horizontalOffset;
-                }
-            }, getCollisionHitbox: function (): CollisionHitbox {
-                // Store collision adjustment locally in each obstacle, avoiding circular reference
-                // This is the default if no specific adjustment exists for this type
-                const defaultAdjustment = { xOffset: 0, yOffset: 0, widthFactor: 1, heightFactor: 1 };
-
-                // Static reference to the adjustment values based on obstacle type
-                const adjustmentMap = {
-                    'tree': { xOffset: 0, yOffset: 30, widthFactor: 0.3, heightFactor: 0.2 },
-                    'rock': { xOffset: 0, yOffset: 5, widthFactor: 0.8, heightFactor: 0.5 },
-                    'snowman': { xOffset: 0, yOffset: 10, widthFactor: 0.7, heightFactor: 0.4 }
-                };
-
-                const adjustment = adjustmentMap[this.type] || defaultAdjustment;
-
-                // Apply obstacle-specific collision adjustments
-                const adjustedPosition: Position = {
-                    x: this.worldPos.x + adjustment.xOffset,
-                    y: this.worldPos.y + adjustment.yOffset
-                };
-
-                const adjustedWidth = this.width * adjustment.widthFactor;
-                const adjustedHeight = this.height * adjustment.heightFactor;
-
-                return {
-                    position: adjustedPosition,
-                    width: adjustedWidth,
-                    height: adjustedHeight
-                };
-            },
-
-            handleCollision: function (other: ICollidable): void {
-                // Static obstacles don't do anything when collided with
-                if (game.debug) {
-                    console.debug(`Obstacle ${this.type} was hit by ${other.type}`);
-                }
-            }
-        };
+        // Create the obstacle using the Obstacle class
+        const obstacle = new Obstacle(worldPos, type, sprite);
 
         // Add to obstacles array
         this.staticObstacles.push(obstacle);
-    }
-
-    /**
-     * Spawn a new AI skier
-     */
-    private spawnAISkier(): void {
-        // Get player position
-        const playerWorldPos = this.game.player.worldPos;
-
-        // Calculate a position relative to the player
-        const screenWidth = this.p.width;
-        const screenHeight = this.p.height;
-
-        // Determine AI skier type with probabilities
-        let skierType: AISkierType;
-        const randomValue = Math.random();
-
-        if (randomValue < 0.3) {
-            // 30% chance for horizontal skier
-            skierType = AISkierType.HORIZONTAL;
-        } else if (randomValue < 0.6) {
-            // 30% chance for fast vertical skier (overtakes player)
-            skierType = AISkierType.FAST_VERTICAL;
-        } else {
-            // 40% chance for slow vertical skier (gets passed by player)
-            skierType = AISkierType.SLOW_VERTICAL;
-        }
-
-        let worldPosX, worldPosY;
-
-        // Different spawn positions based on skier type
-        if (skierType === AISkierType.HORIZONTAL) {
-            // Spawn on either side of the screen
-            worldPosX = playerWorldPos.x + (Math.random() > 0.5 ? -screenWidth : screenWidth);
-            // Somewhere ahead of the player, within the visible area
-            worldPosY = playerWorldPos.y - Math.random() * screenHeight * 0.8;
-        } else if (skierType === AISkierType.FAST_VERTICAL) {
-            // Random X position across the width, slightly offset from center
-            worldPosX = playerWorldPos.x + (Math.random() * screenWidth - screenWidth / 2) * 0.7;
-            // Behind the player, barely visible at the bottom of the screen
-            worldPosY = playerWorldPos.y + screenHeight * 0.8;
-        } else {
-            // Random X position across the width, slightly offset from center
-            worldPosX = playerWorldPos.x + (Math.random() * screenWidth - screenWidth / 2) * 0.7;
-            // Ahead of the player, near the top of the screen
-            worldPosY = playerWorldPos.y - screenHeight * 0.8;
-        }
-
-        // Determine the AI skier speed based on type and difficulty
-        const basePlayerSpeed = this.game.difficultyManager.getPlayerSpeed();
-        let aiSpeed: number;
-
-        if (skierType === AISkierType.FAST_VERTICAL) {
-            // Faster than the player
-            aiSpeed = basePlayerSpeed * 1.3;
-        } else if (skierType === AISkierType.SLOW_VERTICAL) {
-            // Slower than the player
-            aiSpeed = basePlayerSpeed * 0.7;
-        } else {
-            // Horizontal skiers move at a medium speed
-            aiSpeed = basePlayerSpeed;
-        }
-
-        // Choose a random skier variant (1, 2, or 3)
-        // Use variant 1 less often since that's the player's variant
-        const variantType = Math.random() < 0.2 ? 1 : (Math.random() < 0.5 ? 2 : 3);
-
-        // Create the AI skier
-        const aiSkier = new AISkier(
-            { x: worldPosX, y: worldPosY },
-            skierType,
-            this.game,
-            aiSpeed,
-            variantType
-        );
-
-        // Add to AI skiers array
-        this.aiSkiers.push(aiSkier);
+        
+        // Debug logging
+        console.debug(`Spawned ${type} obstacle at x:${worldPos.x.toFixed(2)}, y:${worldPos.y.toFixed(2)}, player y:${playerWorldPos.y.toFixed(2)}, distance ahead: ${(worldPos.y - playerWorldPos.y).toFixed(2)}`);
+        console.debug(`Total obstacles: ${this.staticObstacles.length}`);
     }
 
     /**
@@ -504,24 +432,8 @@ export class EntityManager {
     /**
      * Get collision hitbox for a specific entity
      */
-    public getCollisionHitboxForEntity(entity: Obstacle): CollisionHitbox {
-        // Get the defined collision adjustment for this obstacle type
-        const adjustment = this.collisionAdjustments.get(entity.type) ||
-            { xOffset: 0, yOffset: 0, widthFactor: 1, heightFactor: 1 };
-
-        // Apply obstacle-specific collision adjustments
-        const adjustedPosition: Position = {
-            x: entity.worldPos.x + adjustment.xOffset,
-            y: entity.worldPos.y + adjustment.yOffset
-        };
-
-        const adjustedWidth = entity.width * adjustment.widthFactor;
-        const adjustedHeight = entity.height * adjustment.heightFactor;
-
-        return {
-            position: adjustedPosition,
-            width: adjustedWidth,
-            height: adjustedHeight
-        };
+    public getCollisionHitboxForEntity(entity: GameEntity): CollisionHitbox {
+        // Entities now handle their own collision hitboxes
+        return entity.getCollisionHitbox();
     }
 }

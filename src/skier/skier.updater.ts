@@ -28,10 +28,9 @@ export class SkierUpdater {
 
     /**
      * Update skier state and position
-     * @param scrollSpeed Optional scroll speed for AI skiers
      * @param horizontalOffset Optional horizontal offset for AI skiers
      */
-    public update(scrollSpeed: number = 0, horizontalOffset: number = 0): void {
+    public update(horizontalOffset: number = 0): void {
         // Update speed smoothly
         this.updateSkierSpeed();
         
@@ -57,7 +56,7 @@ export class SkierUpdater {
 
         // Only perform movement if not crashed
         if (!this.isCrashed()) {
-            this.updateMovement(scrollSpeed, horizontalOffset);
+            this.updateMovement(horizontalOffset);
         }
 
         // Add ski tracks
@@ -120,9 +119,8 @@ export class SkierUpdater {
      * For Player: applies user inputs and weather effects
      * For AI: parameters control movement (used differently based on AI type)
      */
-    protected updateMovement(scrollSpeed: number = 0, horizontalOffset: number = 0): void {
+    protected updateMovement(horizontalOffset: number = 0): void {
         // For player, we always use the current speed
-        // For AI, scrollSpeed determines their movement relative to the world
         const playerSpeed = this.skierData.currentSpeed;
         
         // Calculate movement speed (faster when flying)
@@ -155,67 +153,39 @@ export class SkierUpdater {
         }
         
         // For player entities, calculate speed normally
-        // For AI entities, use the provided scrollSpeed
         const baseSpeed = this.skierData.type === 'player' ? 
                          playerSpeed * speedMultiplier : 
                          playerSpeed; // AI skiers pass their own speed
-        
-        // If this is an AI skier, the scroll speed affects vertical movement
-        const aiMovement = scrollSpeed > 0;
         
         // Move based on current state
         switch (this.skierData.currentState) {
             case SkierState.LEFT:
             case SkierState.FLYING_LEFT:
                 this.skierData.worldPos.x -= baseSpeed;
-                if (aiMovement) {
-                    this.skierData.worldPos.y += scrollSpeed - baseSpeed / 4;
-                } else {
-                    this.skierData.worldPos.y += baseSpeed / 4;
-                }
+                this.skierData.worldPos.y += baseSpeed / 4;
                 break;
             case SkierState.RIGHT:
             case SkierState.FLYING_RIGHT:
                 this.skierData.worldPos.x += baseSpeed;
-                if (aiMovement) {
-                    this.skierData.worldPos.y += scrollSpeed - baseSpeed / 4;
-                } else {
-                    this.skierData.worldPos.y += baseSpeed / 4;
-                }
+                this.skierData.worldPos.y += baseSpeed / 4;
                 break;
             case SkierState.LEFT_DOWN:
             case SkierState.FLYING_LEFT_DOWN:
                 this.skierData.worldPos.x -= baseSpeed / 2;
-                if (aiMovement) {
-                    this.skierData.worldPos.y += scrollSpeed - baseSpeed * 0.8;
-                } else {
-                    this.skierData.worldPos.y += baseSpeed * 0.8;
-                }
+                this.skierData.worldPos.y += baseSpeed * 0.8;
                 break;
             case SkierState.RIGHT_DOWN:
             case SkierState.FLYING_RIGHT_DOWN:
                 this.skierData.worldPos.x += baseSpeed / 2;
-                if (aiMovement) {
-                    this.skierData.worldPos.y += scrollSpeed - baseSpeed * 0.8;
-                } else {
-                    this.skierData.worldPos.y += baseSpeed * 0.8;
-                }
+                this.skierData.worldPos.y += baseSpeed * 0.8;
                 break;
             case SkierState.DOWN:
             case SkierState.FLYING_DOWN:
                 // No horizontal movement when going straight down
-                if (aiMovement) {
-                    this.skierData.worldPos.y += scrollSpeed - baseSpeed;
-                } else {
-                    this.skierData.worldPos.y += baseSpeed;
-                }
+                this.skierData.worldPos.y += baseSpeed;
                 break;
             case SkierState.CRASHED:
                 // No movement when crashed
-                if (aiMovement) {
-                    // AI skiers still need to move with the world when crashed
-                    this.skierData.worldPos.y += scrollSpeed;
-                }
                 break;
         }
         

@@ -200,12 +200,20 @@ export class Game {
     this.renderControlsInfo();
   }
   private renderDynamicObjects(): void {
-    // First render the entities using the entity manager's render method
-    // This handles depth sorting internally for all static obstacles and AI skiers
-    this.entityManager.render(this.p, this);
+    // Create a combined array of all renderable objects including the player
+    const allRenderableObjects: RenderableObject[] = [
+      ...this.entityManager.getAllEntities(),
+      this.player
+    ];
     
-    // Then render the player on top
-    this.player.render(this.p, this);
+    // Sort all objects by Y position for proper depth rendering
+    // Objects with smaller Y values (higher up on the screen) render first (appear behind)
+    allRenderableObjects.sort((a, b) => a.worldPos.y - b.worldPos.y);
+    
+    // Render all objects in the sorted order
+    for (const obj of allRenderableObjects) {
+      obj.render(this.p, this);
+    }
   }
 
   private renderLoadingScreen(): void {

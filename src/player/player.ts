@@ -127,4 +127,20 @@ export class Player extends SkierEntity {
     public getSpeedOffset(): number {
         return this.skierData.speedOffset;
     }
+    
+    /**
+     * Player-specific method to turn left
+     * Delegates to the updater
+     */
+    public turnLeft(): boolean {
+        return this.updater.turnLeft();
+    }
+    
+    /**
+     * Player-specific method to turn right
+     * Delegates to the updater
+     */
+    public turnRight(): boolean {
+        return this.updater.turnRight();
+    }
 }
