@@ -10,6 +10,7 @@ import { GameControls } from './gameControls';
 import { DifficultyManager } from './difficultyManager';
 import { CollisionSystem } from './collision/CollisionSystem';
 import { ICollidable } from './collision/ICollidable';
+import { GameRenderer } from './game.renderer';
 
 // Interface for objects that can be rendered with depth sorting
 export interface RenderableObject {
@@ -33,7 +34,7 @@ export interface Touch {
 }
 
 export class Game {
-  private p: p5;
+  protected p: p5;
   debug: boolean = false;
   weatherSystem: WeatherSystem;
   difficultyManager: DifficultyManager; // Add the difficulty manager
@@ -201,6 +202,7 @@ export class Game {
   }
 
   public render(): void {
+    // GameRenderer.render(this); // Call the static render method
     this.p.background(135, 206, 235); // Sky blue background
 
     if (this.assetsLoadingFailed) {

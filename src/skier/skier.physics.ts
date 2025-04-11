@@ -4,11 +4,11 @@ export class SkierPhysics {
     // References to the skier data
     private skierData: SkierData;
 
-    private frameCount: number = 0; // Frame count for timing updates
+    // Rotation smoothing
+    private rotationSmoothingFactor: number = 0.1; // Controls how quickly rotation adjusts to terrain
 
     constructor(skierData: SkierData, private main: SkierEntity) {
         this.skierData = skierData;
-        this.frameCount = 0; // Initialize frame count
     }
 
     /**
@@ -17,10 +17,12 @@ export class SkierPhysics {
     public update(): void {
         const groundLevel = this.readGroundLevel()
         this.skierData.groundLevel = groundLevel
-        // update gravity, but only every 5 frames
-        if (this.frameCount % 3 === 0) {
-            this.skierData.verticalVelocity += this.skierData.gravityValue;
-        }
+        
+        // Update terrain-based rotation
+        this.updateTerrainRotation();
+        
+        // update gravity
+        this.skierData.verticalVelocity += this.skierData.gravityValue;
         // check gravity
         this.skierData.zAxis -= this.skierData.verticalVelocity
 
@@ -36,8 +38,28 @@ export class SkierPhysics {
             this.skierData.isGrounded = false;
             this.skierData.showShadow = true; // Show shadow when airborne
         }
-        console.debug(`[physics]: zAxis: ${this.skierData.zAxis} 
-            groundLevel: ${this.skierData.groundLevel} verticalVelocity: ${this.skierData.verticalVelocity}, grounded: ${this.skierData.isGrounded}`);
+    }
+
+    /**
+     * Update the skier's rotation based on terrain slope
+     */
+    private updateTerrainRotation(): void {
+        // Skip rotation updates if flying or crashed
+        if (!this.skierData.isGrounded || 
+            this.skierData.currentState === SkierState.CRASHED) {
+            return;
+        }
+        
+        // Get terrain slope from the world
+        const slope = this.skierData.game.world.getSlopeAtPosition(this.skierData.worldPos);
+        
+        // Calculate target rotation based on terrain slope
+        // The terrainRotationFactor controls how much the skier rotates with the terrain
+        const targetRotation = slope.angle * this.skierData.terrainRotationFactor;
+        
+        // Smooth the rotation transition
+        this.skierData.currentRotation = this.skierData.currentRotation * (1 - this.rotationSmoothingFactor) +
+            targetRotation * this.rotationSmoothingFactor;
     }
 
     readGroundLevel(): number {

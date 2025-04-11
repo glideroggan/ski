@@ -5,7 +5,7 @@ The game area should scroll itself and player controls the character to left and
 Can also increase their speed by pressing down
 
 # BUGS
-- put back heightmap rotation, so it looks more "bumpy"
+- ✔️put back heightmap rotation, so it looks more "bumpy"
 - menu showing distance covered needs adjustments, we should calculate meter better
 - menu showing number of crashes, which is not needed
 - skiier left falling is offsetted badly in the sprite
@@ -14,7 +14,6 @@ Can also increase their speed by pressing down
 - wrong color on hat and jacket on skier 3
 
 # TODO
-- should refactor the visual and grounded Y position of the skier into a more reusable function
 - switch to use shaders and webGL
 - fix the little face in the corner that can react to things happening in the game
   - need to generate the faces
