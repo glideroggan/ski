@@ -1,7 +1,6 @@
 import { SkierData, SkierEntity, SkierState } from './skier.entity';
 import { ICollidable } from '../collision/ICollidable';
 import { WeatherState } from '../weather/weatherSystem';
-import { SkierPhysics } from './skier.physics';
 
 /**
  * Shared updater for all skier entities
@@ -28,6 +27,13 @@ export class SkierUpdater {
      * Update skier state and position
      */
     public update(): void {
+        const now = Date.now();
+        
+        if (this.skierData.crashTimer && now > this.skierData.crashTimer) {
+            this.skierData.currentState = SkierState.CRASHED;
+            this.skierData.isGrounded = true;
+            this.skierData.collisionEffectTimer = 0; // Reset collision effect
+        }
         // Update speed smoothly
         this.updateSkierSpeed();
 
@@ -43,6 +49,10 @@ export class SkierUpdater {
 
         this.updateMovement();
 
+        if (this.isCrashing()) {
+            return
+        }
+
         // Add ski tracks
         this.updateSkiTracks();
 
@@ -55,6 +65,9 @@ export class SkierUpdater {
         if (this.skierData.collisionEffectTimer > 0) {
             this.skierData.collisionEffectTimer--;
         }
+    }
+    isCrashing():boolean {
+        return !!this.skierData.crashTimer
     }
 
     /**
@@ -341,9 +354,12 @@ export class SkierUpdater {
 
         // On third collision (or more), transition to flying state (player only)
         if (this.collisionCount >= 3) {
-            // TODO: the main class skier should handle this, not the updater
+            this.crashIn(1); // 1 seconds to crash
             this.main.transitionToFlyingState()
         }
+    }
+    crashIn(timer: number) {
+        this.skierData.crashTimer = Date.now() + timer * 1000; // Set crash timer to 3 seconds
     }
 
     /**
@@ -357,16 +373,4 @@ export class SkierUpdater {
         this.skierData.isGrounded = true; // Reset grounded state
         this.skierData.collisionEffectTimer = 0; // Reset collision effect
     }
-
-    /**
-     * Get the crash recovery progress (0.0 to 1.0)
-     */
-    // public getCrashRecoveryProgress(): number {
-    //     if (!this.main.isCrashed()) {
-    //         return 1.0; // Fully recovered
-    //     }
-
-    //     // Calculate recovery progress
-    //     return 1.0 - (this.main.crashRecoveryTimer / this.main.crashRecoveryDuration);
-    // }
 }

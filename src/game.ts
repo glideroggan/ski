@@ -1,7 +1,6 @@
 import { Player } from './player/player';
 import { EntityManager } from './entityManager';
 import p5 from 'p5';
-import { SkiTrack } from './skiTrack';
 import { Camera } from './camera';
 import { World } from './world';
 import { Position } from './camera';

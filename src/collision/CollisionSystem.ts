@@ -1,9 +1,6 @@
 import { Game } from "../game";
 import { ICollidable, CollisionHitbox } from "./ICollidable";
-import { Position } from "../camera";
 import { SkierEntity } from "../skier/skier.entity";
-import { Player } from "../player/player";
-import { AISkier } from "../aiSkier";
 
 export class CollisionSystem {
     constructor(private game: Game) {}

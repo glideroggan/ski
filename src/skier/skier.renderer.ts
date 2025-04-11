@@ -153,15 +153,4 @@ export class SkierRenderer {
             p.text(`Ground: ${this.skierData.isGrounded ? 'Yes' : 'No'}`, screenPos.x + 15, screenPos.y + 10);
         }
     }
-    
-    // /**
-    //  * Helper method to check if a state is a flying state
-    //  */
-    // private isInFlyingState(state: SkierState): boolean {
-    //     return state === SkierState.FLYING_DOWN ||
-    //            state === SkierState.FLYING_RIGHT_DOWN ||
-    //            state === SkierState.FLYING_RIGHT ||
-    //            state === SkierState.FLYING_LEFT_DOWN ||
-    //            state === SkierState.FLYING_LEFT;
-    // }
 }

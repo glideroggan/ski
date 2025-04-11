@@ -59,7 +59,7 @@ export class SkierData {
 
     // Gravity and ground detection properties
     isGrounded: boolean = true;
-    gravityValue: number = 0.02; 
+    gravityValue: number = 0.006; 
     verticalVelocity: number = 0; // Current vertical speed from gravity
     groundLevel: number = 0; // Current terrain height at skier's position
     
@@ -67,6 +67,7 @@ export class SkierData {
 
     // Debug flag
     debug: boolean = false;
+    crashTimer?: number = undefined; // Timer before crashing into snow
     
 
     constructor(p: p5, game: Game, pos: Position, type: EntityType) {
