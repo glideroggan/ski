@@ -162,7 +162,7 @@ export class DifficultyManager {
       
       // Random chance to start weather event
       if (Math.random() < weatherChangeChance) {
-        console.log(`Random weather event triggered (${(weatherChangeChance * 100).toFixed(1)}% chance at difficulty ${this.difficultyLevel})`);
+        console.debug(`Random weather event triggered (${(weatherChangeChance * 100).toFixed(1)}% chance at difficulty ${this.difficultyLevel})`);
         this.game.weatherSystem.changeWeather();
       }
     }
@@ -321,7 +321,7 @@ export class DifficultyManager {
     
     // Log debug info occasionally to avoid console spam
     if (this.game.debug && Math.random() < 0.01) {
-      console.log(`Difficulty breakdown: Base=${originalDifficulty.toFixed(1)}, ` +
+      console.debug(`Difficulty breakdown: Base=${originalDifficulty.toFixed(1)}, ` +
                    `Section=${sectionBonus > 0 ? '+' : ''}${sectionBonus} (${this.getCurrentSectionName()}), ` +
                    `Weather=${weatherBonus > 0 ? '+' : ''}${weatherBonus} (${WeatherState[weatherState]}), ` +
                    `Speed=${speedBonus > 0 ? '+' : ''}${speedBonus}, ` +

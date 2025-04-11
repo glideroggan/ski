@@ -1,5 +1,5 @@
 import p5 from 'p5';
-import { SkierData, SkierState } from './skier.entity';
+import { SkierData, SkierEntity, SkierState } from './skier.entity';
 import { Game } from '../game';
 
 /**
@@ -8,7 +8,7 @@ import { Game } from '../game';
 export class SkierRenderer {
     private skierData: SkierData;
 
-    constructor(skierData: SkierData) {
+    constructor(skierData: SkierData, private main: SkierEntity) {
         this.skierData = skierData;
     }
 
@@ -23,6 +23,7 @@ export class SkierRenderer {
 
         const sprite = this.skierData.sprites.get(this.skierData.currentState);
         if (!sprite) {
+            console.warn(`Sprite not found for state ${SkierState[this.skierData.currentState]}`);
             return;
         }
 
@@ -30,15 +31,15 @@ export class SkierRenderer {
         let collisionEffectPushed = false;
         
         // Apply visual effect if collision is active
-        if (this.skierData.collisionEffect > 0) {
+        if (this.skierData.collisionEffectTimer > 0) {
             p.push();
             collisionEffectPushed = true;
             
-            if (this.skierData.collisionEffect % 4 < 2) { // Flashing effect
+            if (this.skierData.collisionEffectTimer % 4 < 2) { // Flashing effect
                 p.tint(255, 100, 100); // Red tint
             }
             // Add slight random offset for shake effect
-            const shakeAmount = this.skierData.collisionEffect / 5;
+            const shakeAmount = this.skierData.collisionEffectTimer / 5;
             p.translate(
                 p.random(-shakeAmount, shakeAmount),
                 p.random(-shakeAmount, shakeAmount)
@@ -48,24 +49,32 @@ export class SkierRenderer {
         // Get screen position from world position using camera transformation
         const screenPos = game.camera.worldToScreen(this.skierData.worldPos);
 
+        // Calculate height above ground for visual effects
+        let heightAboveGround = this.skierData.zAxis;
+        // lets tweak heightAboveGround so that small changes in zAxis cause more noticeable changes in height
+        heightAboveGround = heightAboveGround * 20
+
+        // TODO: all these calculations we should instead be able to do on all entities in the same place
+        // just introduce another axis Z
+
         // Center the sprite on the skier's position
         let x = screenPos.x;
-        let y = screenPos.y;
+        let groundedY = screenPos.y + (sprite.spriteHeight * sprite.getScale() / 2) * .4;
+        let visualY = screenPos.y - heightAboveGround
 
-        // Apply terrain height adjustment
-        y -= this.skierData.currentVisualHeight;
-
-        // Draw shadow when flying/jumping
-        const isFlying = this.isInFlyingState(this.skierData.currentState);
-        if (isFlying) {
+        // console.debug(`[renderer] Height above ground: ${heightAboveGround}, Skier Y: ${y}`);
+        
+        // Draw shadow when visually airborne (even if not in flying state)
+        // This is purely for visual effect and doesn't affect physics
+        if (this.skierData.showShadow) {
             p.push();
             // Draw an oval shadow on the ground (without the height adjustment)
-            const shadowY = screenPos.y; // Shadow is directly under the skier's position
-            const shadowWidth = this.skierData.width * 0.6; // Narrower than the skier
+            const shadowY = groundedY; // Shadow is at ground level
+            const shadowWidth = this.skierData.width * 0.7; // Narrower than the skier
             const shadowHeight = this.skierData.height * 0.2; // Flatter than the skier
             
             // Adjust shadow opacity based on height - higher means more transparent shadow
-            const shadowOpacity = Math.max(0, 180 - this.skierData.currentVisualHeight);
+            const shadowOpacity = Math.max(20, Math.min(120, 150 - heightAboveGround * 3));
             
             p.noStroke();
             p.fill(0, 0, 0, shadowOpacity);
@@ -77,17 +86,19 @@ export class SkierRenderer {
         
         // Apply terrain rotation if not flying or crashed
         const isCrashed = this.skierData.currentState === SkierState.CRASHED;
+        const isFlying = this.main.isFlying();
         
         if (!isFlying && !isCrashed) {
             // Translate to the sprite's position, rotate, then draw
-            p.translate(x, y);
+            p.translate(screenPos.x, visualY);
             p.rotate(this.skierData.currentRotation);
             
             // Render the sprite at the origin (0,0) since we've translated to its position
             sprite.render(0, 0, this.skierData.width, this.skierData.height);
         } else {
             // Draw normally without rotation
-            sprite.render(x, y, this.skierData.width, this.skierData.height);
+            p.translate(screenPos.x, visualY);
+            sprite.render(0, 0, this.skierData.width, this.skierData.height);
         }
         
         p.pop();
@@ -97,49 +108,16 @@ export class SkierRenderer {
             p.pop(); // Restore drawing state (for collision effect)
         }
 
+        // render center of sprite (debug)
+        if (this.skierData.debug) {
+            p.fill(0, 255, 0);
+            p.noStroke();
+            p.circle(screenPos.x, screenPos.y, 5); // Draw a small circle at the skier's position
+        }
+
+
         // Render debug hitbox if debug mode is enabled
         this.renderDebugHitbox(p, game);
-
-        // Debug visualization for terrain height adjustment and sprite rotation
-        if (this.skierData.debug) {
-            const terrainHeight = game.world.getHeightAtPosition(this.skierData.worldPos);
-            const slope = game.world.getSlopeAtPosition(this.skierData.worldPos);
-
-            // Draw a line showing the height adjustment
-            p.stroke(0, 255, 0);
-            p.line(x, y, x, screenPos.y);
-
-            // Draw a line showing slope direction
-            p.stroke(255, 0, 0);
-            const slopeLength = 20;
-            p.line(
-                x,
-                y,
-                x + Math.cos(this.skierData.currentRotation) * slopeLength,
-                y + Math.sin(this.skierData.currentRotation) * slopeLength
-            );
-
-            // Display debug values
-            p.fill(255, 255, 0);
-            p.noStroke();
-            p.text(`Visual Height: ${this.skierData.currentVisualHeight.toFixed(2)}`, 10, 210);
-            p.text(`Visual Rotation: ${(this.skierData.currentRotation * 180 / Math.PI).toFixed(2)}°`, 10, 230);
-            
-            // Show terrain bumpiness info
-            p.fill(0, 255, 255);
-            p.text(`Terrain bumpy: ${terrainHeight.toFixed(3)}`, 10, 250);
-            p.text(`Slope angle: ${(slope.angle * 180 / Math.PI).toFixed(1)}°`, 10, 270);
-            
-            // Show track info
-            p.fill(255, 200, 200);
-            p.text(`Track points: ${this.skierData.skiTrack.getPointCount()}`, 200, 210);
-            
-            // Show gravity system info
-            p.fill(255, 150, 255);
-            p.text(`Grounded: ${this.skierData.isGrounded}`, 10, 290);
-            p.text(`Ground level: ${this.skierData.groundLevel.toFixed(2)}`, 10, 310);
-            p.text(`Vertical velocity: ${this.skierData.verticalVelocity.toFixed(2)}`, 10, 330);
-        }
     }
 
     /**
@@ -164,16 +142,26 @@ export class SkierRenderer {
             hitbox.width,
             hitbox.height
         );
+        
+        // Display height above ground in debug mode
+        if (this.skierData.debug) {
+            const heightAboveGround = this.skierData.zAxis - this.skierData.groundLevel;
+            p.fill(255);
+            p.noStroke();
+            p.textSize(10);
+            p.text(`Height: ${heightAboveGround.toFixed(1)}`, screenPos.x + 15, screenPos.y - 5);
+            p.text(`Ground: ${this.skierData.isGrounded ? 'Yes' : 'No'}`, screenPos.x + 15, screenPos.y + 10);
+        }
     }
     
-    /**
-     * Helper method to check if a state is a flying state
-     */
-    private isInFlyingState(state: SkierState): boolean {
-        return state === SkierState.FLYING_DOWN ||
-               state === SkierState.FLYING_RIGHT_DOWN ||
-               state === SkierState.FLYING_RIGHT ||
-               state === SkierState.FLYING_LEFT_DOWN ||
-               state === SkierState.FLYING_LEFT;
-    }
+    // /**
+    //  * Helper method to check if a state is a flying state
+    //  */
+    // private isInFlyingState(state: SkierState): boolean {
+    //     return state === SkierState.FLYING_DOWN ||
+    //            state === SkierState.FLYING_RIGHT_DOWN ||
+    //            state === SkierState.FLYING_RIGHT ||
+    //            state === SkierState.FLYING_LEFT_DOWN ||
+    //            state === SkierState.FLYING_LEFT;
+    // }
 }

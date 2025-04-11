@@ -6,6 +6,7 @@ import { SpriteAtlas } from './spriteAtlas';
 import { AISkier, AISkierType } from './aiSkier';
 import { ICollidable, CollisionHitbox } from './collision/ICollidable';
 import { Obstacle, ObstacleType } from './obstacle'; // Import the Obstacle class
+import { SnowdriftHeightmap } from './world';
 
 // Interface for obstacle dimensions
 export interface ObstacleDimensions {
@@ -38,8 +39,6 @@ export class EntityManager {
     private aiSkiers: AISkier[] = [];
 
     // Asset management
-    private spriteSheet: p5.Image | null = null;
-    private sprites: Map<string, Sprite> = new Map();
     private atlasLoaded: boolean = false;
 
     // Spawning properties
@@ -49,11 +48,7 @@ export class EntityManager {
     private aiSkierSpawnInterval: number = 360; // Increased from 180 to reduce AI skier frequency
 
     // Gameplay properties
-    private temporarySpeedBoost: boolean = false;
     private debug: boolean = false;
-
-    // Obstacle types
-    private obstacleTypes: ObstacleType[] = ['tree', 'rock', 'snowman', 'snowdrift'];
 
     // Collision adjustments for different entity types
     public collisionAdjustments: Map<string, CollisionOffset> = new Map();
@@ -333,6 +328,12 @@ export class EntityManager {
             const shouldKeep = distance < viewDistance;
             
             if (!shouldKeep) {
+                // Remove the snowdrift heightmap if this obstacle has one
+                if (obstacle.type === 'snowdrift' && obstacle.heightmap) {
+                    this.game.world.removeHeightProvider(obstacle.heightmap);
+                    console.debug(`Removed heightmap for snowdrift at y:${obstacle.worldPos.y.toFixed(2)}`);
+                }
+                
                 console.debug(`Removing obstacle ${obstacle.type} at y:${obstacle.worldPos.y.toFixed(2)}, distance:${distance.toFixed(2)}, player y:${playerY.toFixed(2)}`);
             }
             
@@ -441,6 +442,25 @@ export class EntityManager {
 
         // Only add the obstacle if we found a valid position
         if (validPositionFound && obstacle) {
+            // For snowdrifts, create and register a heightmap
+            if (obstacle.type === 'snowdrift') {
+                // Create a heightmap for this snowdrift
+                const heightmap = new SnowdriftHeightmap(
+                    obstacle.worldPos,
+                    obstacle.width,
+                    obstacle.height,
+                    1.0 // Increased from 0.7 to 1.0 (100% of max terrain height for much more noticeable effect)
+                );
+                
+                // Store reference to heightmap in the obstacle
+                obstacle.heightmap = heightmap;
+                
+                // Register the heightmap with the world
+                this.game.world.addHeightProvider(heightmap);
+                
+                console.debug(`Created heightmap for snowdrift at (${obstacle.worldPos.x.toFixed(2)}, ${obstacle.worldPos.y.toFixed(2)})`);
+            }
+            
             // Add to obstacles array
             this.staticObstacles.push(obstacle);
             

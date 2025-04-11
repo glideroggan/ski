@@ -6,6 +6,7 @@ import { CollisionHitbox, ICollidable } from '../collision/ICollidable';
 import { SkierRenderer } from './skier.renderer';
 import { SkierUpdater } from './skier.updater';
 import { SkiTrack } from './skiTrack';
+import { SkierPhysics } from './skier.physics';
 
 /**
  * Shared enum for all skier states
@@ -24,7 +25,7 @@ export enum SkierState {
     CRASHED
 }
 
-export type EntityType = 'player' | 'aiSkier' | 'tree' | 'rock' | 'snowman';
+export type EntityType = 'player' | 'aiSkier' | 'tree' | 'rock' | 'snowman' | 'snowdrift';
 
 /**
  * Shared data structure for skier entities
@@ -41,22 +42,24 @@ export class SkierData {
     // Type of skier entity for collision detection
     type: EntityType;
     skiTrack: SkiTrack;
+    showShadow: boolean = false; // Flag to show shadow
+
+    zAxis: number = 0; // Z-axis position for 3D effect
 
     // Visual properties
-    currentVisualHeight: number = 0;
     currentRotation: number = 0;
     terrainRotationFactor: number = 0.08;
-    terrainHeightFactor: number = 45;
+    terrainHeightFactor: number = 15; // Reduced from 45 to create more natural jumps
 
     // Collision and speed properties
-    collisionEffect: number = 0;
+    collisionEffectTimer: number = 0; // Timer for collision effect
     currentSpeed: number = 4;
     speedOffset: number = 0;
     speedTransitionFactor: number = 0.04; // Reduced from 0.1 for smoother transitions
 
     // Gravity and ground detection properties
     isGrounded: boolean = true;
-    gravityValue: number = 2.5; // How fast the skier falls when not grounded
+    gravityValue: number = 0.02; 
     verticalVelocity: number = 0; // Current vertical speed from gravity
     groundLevel: number = 0; // Current terrain height at skier's position
     
@@ -64,6 +67,7 @@ export class SkierData {
 
     // Debug flag
     debug: boolean = false;
+    
 
     constructor(p: p5, game: Game, pos: Position, type: EntityType) {
         this.p = p;
@@ -84,7 +88,7 @@ export class SkierData {
         };
 
         // If terrain height is enabled, adjust the collision hitbox Y position
-        adjustedPosition.y -= this.currentVisualHeight;
+        adjustedPosition.y -= this.zAxis;
 
         const adjustedWidth = this.width * 0.6;
         const adjustedHeight = this.height * 0.15;
@@ -106,11 +110,17 @@ export abstract class SkierEntity implements RenderableObject, ICollidable {
     protected renderer: SkierRenderer;
     protected updater: SkierUpdater;
 
+    public crashRecoveryTimer: number = 0;
+    public readonly crashRecoveryDuration: number = 180; // 3 seconds to recover from crash
+    physics: SkierPhysics;
+
+
     constructor(p: p5, pos: Position, game: Game, type: EntityType, variantType: number = 1) {
         this.p = p;
         this.skierData = new SkierData(p, game, pos, type);
-        this.renderer = new SkierRenderer(this.skierData);
-        this.updater = new SkierUpdater(this.skierData);
+        this.renderer = new SkierRenderer(this.skierData, this);
+        this.updater = new SkierUpdater(this.skierData, this);
+        this.physics = new SkierPhysics(this.skierData, this);
 
         // Each entity should load its own assets with the provided variant
         this.loadAssets(variantType);
@@ -144,6 +154,9 @@ export abstract class SkierEntity implements RenderableObject, ICollidable {
      * Update method to be called each frame
      */
     public update(): void {
+        // Update physics (includes flying state and terrain handling)
+        this.physics.update();
+
         this.updater.update();
     }
 
@@ -176,21 +189,25 @@ export abstract class SkierEntity implements RenderableObject, ICollidable {
      * Check if the skier is in a flying state
      */
     public isFlying(): boolean {
-        return this.updater.isFlying();
+        return !this.skierData.isGrounded
     }
 
     /**
      * Check if the skier is in crashed state
      */
     public isCrashed(): boolean {
-        return this.updater.isCrashed();
+        return this.skierData.currentState === SkierState.CRASHED;
     }
 
     /**
      * Check if the skier is in any collision state (crashed, flying, or collision effect active)
      */
     public isInCollisionState(): boolean {
-        return this.updater.isInCollisionState();
+        /*
+        currentState = CRASHED
+        collisionEffectTimer > 0 (collision effect active)
+        */ 
+        return this.skierData.currentState === SkierState.CRASHED || this.skierData.collisionEffectTimer > 0;
     }
 
     /**
@@ -211,7 +228,7 @@ export abstract class SkierEntity implements RenderableObject, ICollidable {
      * Get the current visual height
      */
     public getCurrentVisualHeight(): number {
-        return this.skierData.currentVisualHeight;
+        return this.skierData.zAxis;
     }
 
     /**
@@ -240,6 +257,42 @@ export abstract class SkierEntity implements RenderableObject, ICollidable {
      */
     public getSprites(): Map<SkierState, Sprite> {
         return this.skierData.sprites;
+    }
+
+
+    public transitionToFlyingState(): void {
+        // TODO: handle transition to flying state
+        // DOWN -> FLYING_DOWN
+        // RIGHT_DOWN -> FLYING_RIGHT_DOWN
+        // RIGHT -> FLYING_RIGHT
+        // LEFT_DOWN -> FLYING_LEFT_DOWN
+        // LEFT -> FLYING_LEFT
+        switch (this.skierData.currentState) {
+            case SkierState.DOWN:
+                this.skierData.currentState = SkierState.FLYING_DOWN;
+                break;
+            case SkierState.RIGHT_DOWN:
+                this.skierData.currentState = SkierState.FLYING_RIGHT_DOWN;
+                break;
+            case SkierState.RIGHT:
+                this.skierData.currentState = SkierState.FLYING_RIGHT;
+                break;
+            case SkierState.LEFT_DOWN:
+                this.skierData.currentState = SkierState.FLYING_LEFT_DOWN;
+                break;
+            case SkierState.LEFT:
+                this.skierData.currentState = SkierState.FLYING_LEFT;
+                break;
+        }
+    }
+
+    /**
+     * Transitions the skier to crashed state
+     */
+    public transitionToCrashed(): void {
+        this.skierData.currentState = SkierState.CRASHED;
+        this.crashRecoveryTimer = this.crashRecoveryDuration;
+        console.debug(`${this.skierData.type} has crashed!`);
     }
 
     /**

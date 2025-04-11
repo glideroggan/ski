@@ -221,10 +221,17 @@ export class WeatherSystem {
       this.transitionSpeed = 0.005; // Normal transition speed
     }
 
-    console.log(`Weather changing to: ${WeatherState[state]}, sudden: ${sudden}`);
+    console.debug(`Weather changing to: ${WeatherState[state]}, sudden: ${sudden}`);
   }
 
   public render(): void {
+    // Skip weather rendering in debug mode if desired
+    if (this.game.debug) {
+      // Only render minimal weather effects in debug mode to keep visibility high
+      this.renderMinimalDebugWeather();
+      return;
+    }
+    
     // Apply camera shake if needed
     if (this.shakeIntensity > 0) {
       this.p.push();
@@ -249,6 +256,31 @@ export class WeatherSystem {
     if (this.visibilityOverlay > 0) {
       this.renderVisibilityOverlay();
     }
+  }
+
+  /**
+   * Renders a minimal version of the weather effects for debug mode
+   * This preserves the weather state but reduces visual obstruction
+   */
+  private renderMinimalDebugWeather(): void {
+    // Render a small indicator of current weather state in the corner
+    this.p.push();
+    this.p.fill(0, 0, 0, 120);
+    this.p.rect(this.p.width - 120, 10, 110, 25);
+    this.p.fill(255);
+    this.p.textAlign(this.p.LEFT, this.p.TOP);
+    this.p.text(`Weather: ${WeatherState[this.currentState]}`, this.p.width - 115, 15);
+    this.p.pop();
+    
+    // Render a few particles (max 20) just to indicate weather
+    const maxParticles = Math.min(20, this.getActiveParticleCount());
+    for (let i = 0; i < maxParticles; i++) {
+      if (this.particles[i].active) {
+        this.particles[i].render();
+      }
+    }
+    
+    // Skip the visibility overlay entirely in debug mode
   }
 
   private renderVisibilityOverlay(): void {

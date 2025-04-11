@@ -1,3 +1,4 @@
+import { EntityType } from '../skier/skier.entity';
 import { Position } from '../camera';
 
 /**
@@ -11,7 +12,7 @@ export interface ICollidable {  // The world position of the collidable object
   height: number;
   
   // Type identifier for the object (using union type for better type safety)
-  type: 'player' | 'aiSkier' | 'tree' | 'rock' | 'snowman' | 'snowdrift';
+  type: EntityType;
   
   /**
    * Gets the collision hitbox for this entity.

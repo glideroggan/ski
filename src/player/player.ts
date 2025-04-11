@@ -107,10 +107,13 @@ export class Player extends SkierEntity {
     public decreaseSpeed(amount: number = 0.5): void {
         this.skierData.speedOffset -= amount;
         
-        // Cap the negative offset to prevent too much slowdown
-        const minOffset = -2.5; // Allow slowing down to at most 2.5 units below base speed
-        if (this.skierData.speedOffset < minOffset) {
-            this.skierData.speedOffset = minOffset;
+        // In debug mode, allow reducing speed to zero or even negative
+        // Otherwise, cap the negative offset to prevent too much slowdown
+        if (!this.skierData.game.debug) {
+            const minOffset = -2.5; // Allow slowing down to at most 2.5 units below base speed
+            if (this.skierData.speedOffset < minOffset) {
+                this.skierData.speedOffset = minOffset;
+            }
         }
         
         console.debug(`Speed offset decreased to ${this.skierData.speedOffset.toFixed(2)}`);
@@ -173,5 +176,33 @@ export class Player extends SkierEntity {
      */
     public resetCrashCount(): void {
         this.crashCount = 0;
+    }
+    
+    /**
+     * Get the player's current visual height (for debug display)
+     */
+    public getVisualHeight(): number {
+        return this.skierData.zAxis;
+    }
+    
+    /**
+     * Get the player's current ground level (for debug display)
+     */
+    public getGroundLevel(): number {
+        return this.skierData.groundLevel;
+    }
+    
+    /**
+     * Get the player's current vertical velocity (for debug display)
+     */
+    public getVerticalVelocity(): number {
+        return this.skierData.verticalVelocity;
+    }
+    
+    /**
+     * Check if the player is currently grounded (for debug display)
+     */
+    public isGrounded(): boolean {
+        return this.skierData.isGrounded;
     }
 }

@@ -16,6 +16,7 @@ Can also increase their speed by pressing down
 - wrong color on hat and jacket on skier 3
 
 # TODO
+- Should start refactor skier.update.ts, becoming big
 - switch to use shaders and webGL
 - fix the little face in the corner that can react to things happening in the game
   - need to generate the faces
@@ -59,9 +60,10 @@ Weather Zones: Create regions on the map with different typical weather patterns
 Weather Warning System: Visual/audio cues before weather changes
 🔧Weather-Specific Obstacles: Snowdrifts that only appear during heavy snow
   - snowdrifts
-    - fix an asset for it
-    - generate an heightmap for it
-    - change the heightmap system, so that you can plug in the snowdrift heightmap when sampling over the collision box
+    - ✔️fix an asset for it
+    - ⚠️generate an heightmap for it
+      - ✔️went with a procedural generation of the heightmap, so that it is not a static image, but a dynamic one
+    - ✔️change the heightmap system, so that you can plug in the snowdrift heightmap when sampling over the collision box
     - fix logic so that skiers visualGroundposY is only forced when the Y-axis go down (up the screen), and is only changed by gravity in the other direction (down the screen, positive Y-axis)
     - also remember that when heightmap and visualGroundPosY are not the same, then skiier is not grounded, and we should apply the shadow and remove control of the skiier
   - changed to appear not only during heavy snow

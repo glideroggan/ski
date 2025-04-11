@@ -124,6 +124,7 @@ export class Game {
       // Update the difficulty manager
       this.difficultyManager.update();
 
+      
       // Update player entity
       this.player.update();
 
@@ -151,7 +152,7 @@ export class Game {
             if (!('type' in entity)) return false;
             const type = entity.type as string;
             // Only include compatible collision types
-            return ['tree', 'rock', 'snowman', 'snowdrift', 'aiSkier', 'player'].includes(type);
+            return ['tree', 'rock', 'snowman', 'aiSkier', 'player'].includes(type);
           }) as ICollidable[]
       ];
       
@@ -231,16 +232,9 @@ export class Game {
       this.renderGameOverScreen();
     }
 
-    // Show debug info for obstacles
+    // Show debug info in a consolidated panel
     if (this.debug) {
-      this.p.fill(255);
-      this.p.textSize(12);
-      this.p.textAlign(this.p.LEFT, this.p.TOP);
-      this.p.text(`Obstacles: ${this.entityManager.getObstacleCount()}`, 10, 10);
-      this.p.text(`AI Skiers: ${this.entityManager.getAISkierCount()}`, 10, 30);
-      this.p.text(`Weather: ${WeatherState[this.weatherSystem.getCurrentWeatherState()]}`, 10, 290);
-      this.p.text(`Visibility: ${(100 - this.weatherSystem.getVisibilityFactor() * 100).toFixed(0)}%`, 10, 310);
-      this.p.text(`Crash Count: ${this.player.getCrashCount()}`, 10, 50);
+      this.renderDebugPanel();
     }
 
     // Display controls information
@@ -542,6 +536,59 @@ export class Game {
     return Promise.all(promises).then(() => {
       console.debug('All sprite atlases loaded successfully');
     });
+  }
+
+  /**
+   * Renders a consolidated debug panel with all debug information
+   */
+  private renderDebugPanel(): void {
+    const padding = 10;
+    const lineHeight = 20;
+    const panelWidth = 250;
+    const panelHeight = 360; // Tall enough for all our debug info
+    
+    // Background panel with padding
+    this.p.fill(0, 0, 0, 180);
+    this.p.rect(padding, padding, panelWidth, panelHeight, 5);
+    
+    this.p.fill(255);
+    this.p.textSize(12);
+    this.p.textAlign(this.p.LEFT, this.p.TOP);
+    
+    // Game stats
+    let y = padding + 10;
+    this.p.text(`Obstacles: ${this.entityManager.getObstacleCount()}`, padding + 10, y); y += lineHeight;
+    this.p.text(`AI Skiers: ${this.entityManager.getAISkierCount()}`, padding + 10, y); y += lineHeight;
+    this.p.text(`Crash Count: ${this.player.getCrashCount()}`, padding + 10, y); y += lineHeight;
+    
+    // Player info
+    this.p.text(`Player Speed: ${this.player.getCurrentSpeed().toFixed(2)}`, padding + 10, y); y += lineHeight;
+    this.p.text(`Speed Offset: ${this.player.getSpeedOffset().toFixed(2)}`, padding + 10, y); y += lineHeight;
+    this.p.text(`Base Speed: ${this.difficultyManager.getPlayerSpeed().toFixed(2)}`, padding + 10, y); y += lineHeight;
+    this.p.text(`Position: (${this.player.worldPos.x.toFixed(0)}, ${this.player.worldPos.y.toFixed(0)})`, padding + 10, y); y += lineHeight;
+    
+    // Terrain info
+    const playerPos = this.player.worldPos;
+    const terrainHeight = this.world.getHeightAtPosition(playerPos);
+    const slope = this.world.getSlopeAtPosition(playerPos);
+    
+    y += 10; // Add some spacing
+    this.p.text(`Terrain height: ${terrainHeight.toFixed(3)}`, padding + 10, y); y += lineHeight;
+    this.p.text(`Terrain slope: ${(slope.angle * 180 / Math.PI).toFixed(1)}°`, padding + 10, y); y += lineHeight;
+    this.p.text(`Gradient: ${slope.gradient.toFixed(3)}`, padding + 10, y); y += lineHeight;
+    this.p.text(`Height providers: ${this.world.getHeightProviderCount()}`, padding + 10, y); y += lineHeight;
+    
+    // Physics info
+    y += 10; // Add some spacing
+    this.p.text(`Grounded: ${this.player.isGrounded()}`, padding + 10, y); y += lineHeight;
+    this.p.text(`Visual Height: ${this.player.getVisualHeight().toFixed(2)}`, padding + 10, y); y += lineHeight;
+    this.p.text(`Ground Level: ${this.player.getGroundLevel().toFixed(2)}`, padding + 10, y); y += lineHeight;
+    this.p.text(`Vertical Velocity: ${this.player.getVerticalVelocity().toFixed(2)}`, padding + 10, y); y += lineHeight;
+    
+    // Weather info
+    y += 10; // Add some spacing
+    this.p.text(`Weather: ${WeatherState[this.weatherSystem.getCurrentWeatherState()]}`, padding + 10, y); y += lineHeight;
+    this.p.text(`Visibility: ${(100 - this.weatherSystem.getVisibilityFactor() * 100).toFixed(0)}%`, padding + 10, y);
   }
 }
 

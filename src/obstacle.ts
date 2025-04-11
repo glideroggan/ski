@@ -4,6 +4,7 @@ import { Game, RenderableObject } from './game';
 import { CollisionHitbox, ICollidable } from './collision/ICollidable';
 import { Position } from './camera';
 import { Sprite } from './sprite';
+import { SnowdriftHeightmap, IHeightProvider } from './world';
 
 export type ObstacleType = 'tree' | 'rock' | 'snowman' | 'snowdrift';
 
@@ -13,6 +14,7 @@ export class Obstacle implements RenderableObject, ICollidable {
     public height: number;
     public type: ObstacleType;
     public sprite: Sprite | null;
+    public heightmap: IHeightProvider | null = null;
     
     // Configuration for each obstacle type - adjusted to better match actual sprite sizes
     private static typeConfig = {
