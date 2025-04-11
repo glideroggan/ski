@@ -108,7 +108,7 @@ export class SkierData {
 export abstract class SkierEntity implements RenderableObject, ICollidable {
     protected p: p5;
     protected skierData: SkierData;
-    protected renderer: SkierRenderer;
+    public renderer: SkierRenderer;
     protected updater: SkierUpdater;
 
     public crashRecoveryTimer: number = 0;
@@ -262,12 +262,6 @@ export abstract class SkierEntity implements RenderableObject, ICollidable {
 
 
     public transitionToFlyingState(): void {
-        // TODO: handle transition to flying state
-        // DOWN -> FLYING_DOWN
-        // RIGHT_DOWN -> FLYING_RIGHT_DOWN
-        // RIGHT -> FLYING_RIGHT
-        // LEFT_DOWN -> FLYING_LEFT_DOWN
-        // LEFT -> FLYING_LEFT
         switch (this.skierData.currentState) {
             case SkierState.DOWN:
                 this.skierData.currentState = SkierState.FLYING_DOWN;

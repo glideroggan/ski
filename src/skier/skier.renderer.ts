@@ -1,6 +1,8 @@
 import p5 from 'p5';
 import { SkierData, SkierEntity, SkierState } from './skier.entity';
 import { Game } from '../game';
+import { Sprite } from '../sprite';
+import { Position } from '../camera';
 
 /**
  * Shared renderer for all skier entities
@@ -12,6 +14,12 @@ export class SkierRenderer {
         this.skierData = skierData;
     }
 
+    public getGroundY(screenPos:Position, sprite:Sprite): number {
+        return screenPos.y + (sprite.spriteHeight * sprite.getScale() / 2) * .4;
+    }
+    public getVisualY(screenPos:Position): number {
+        return screenPos.y - (this.skierData.zAxis * 20);
+    }
     render(p: p5, game: Game): void {
         // We no longer render ski tracks here - they are rendered separately
         // before all dynamic objects in the game's renderAllSkiTracks method
@@ -51,16 +59,12 @@ export class SkierRenderer {
 
         // Calculate height above ground for visual effects
         let heightAboveGround = this.skierData.zAxis;
-        // lets tweak heightAboveGround so that small changes in zAxis cause more noticeable changes in height
         heightAboveGround = heightAboveGround * 20
-
-        // TODO: all these calculations we should instead be able to do on all entities in the same place
-        // just introduce another axis Z
 
         // Center the sprite on the skier's position
         let x = screenPos.x;
-        let groundedY = screenPos.y + (sprite.spriteHeight * sprite.getScale() / 2) * .4;
-        let visualY = screenPos.y - heightAboveGround
+        let groundedY = this.getGroundY(screenPos, sprite);
+        let visualY = this.getVisualY(screenPos);
 
         // console.debug(`[renderer] Height above ground: ${heightAboveGround}, Skier Y: ${y}`);
         

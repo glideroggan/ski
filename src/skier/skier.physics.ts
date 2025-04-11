@@ -36,7 +36,7 @@ export class SkierPhysics {
             this.skierData.isGrounded = false;
             this.skierData.showShadow = true; // Show shadow when airborne
         }
-        console.log(`[physics]: zAxis: ${this.skierData.zAxis} 
+        console.debug(`[physics]: zAxis: ${this.skierData.zAxis} 
             groundLevel: ${this.skierData.groundLevel} verticalVelocity: ${this.skierData.verticalVelocity}, grounded: ${this.skierData.isGrounded}`);
     }
 
