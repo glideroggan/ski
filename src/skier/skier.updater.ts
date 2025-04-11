@@ -221,19 +221,16 @@ export class SkierUpdater {
         }
 
         // Calculate position at the bottom center of the sprite bounding box
-        const trackX = this.skierData.worldPos.x;
+        let trackX = this.skierData.worldPos.x;
         let trackY = this.skierData.worldPos.y;
-        // const screenPos = this.skierData.game.camera.worldToScreen(this.skierData.worldPos);
+        const screenPos = this.skierData.game.camera.worldToScreen(this.skierData.worldPos);
 
-        // add the "visual" height to the track position
-        // Calculate height above ground for visual effects
-        // NOTE: not sure why I can't get the these ski tracks to use the same getGroundY and getVisualY functions as the main render method
-        let heightAboveGround = this.skierData.zAxis;
-        heightAboveGround = heightAboveGround * 20
-        trackY -= heightAboveGround
-
-        // Apply height adjustment to track position
-        trackY += (currentSprite.spriteHeight * currentSprite.getScale() / 2);
+        const groundY = this.main.renderer.getVisualY(screenPos) + 
+            currentSprite.spriteHeight * currentSprite.getScale() / 2
+        const adjustedScreenPos = { x: screenPos.x, y: groundY };
+        const adjustedWorldPos = this.skierData.game.camera.screenToWorld(adjustedScreenPos);
+        trackX = adjustedWorldPos.x;
+        trackY = adjustedWorldPos.y;
 
         // Add the ski track point to this skier's own track
         this.skierData.skiTrack.addPoint(trackX, trackY);

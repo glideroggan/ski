@@ -14,16 +14,16 @@ export class SkierRenderer {
         this.skierData = skierData;
     }
 
-    public getGroundY(screenPos:Position, sprite:Sprite): number {
-        return screenPos.y + (sprite.spriteHeight * sprite.getScale() / 2) * .4;
+    public getGroundY(screenPos: Position, sprite: Sprite): number {
+        return screenPos.y + (sprite.spriteHeight * sprite.getScale() / 2) * .2;
     }
-    public getVisualY(screenPos:Position): number {
+    public getVisualY(screenPos: Position): number {
         return screenPos.y - (this.skierData.zAxis * 20);
     }
     render(p: p5, game: Game): void {
         // We no longer render ski tracks here - they are rendered separately
         // before all dynamic objects in the game's renderAllSkiTracks method
-        
+
         if (!this.skierData.assetsLoaded || this.skierData.sprites.size === 0) {
             // Skip rendering if assets aren't loaded
             return;
@@ -37,12 +37,12 @@ export class SkierRenderer {
 
         // Create a flag to track if we've pushed the collision effect state
         let collisionEffectPushed = false;
-        
+
         // Apply visual effect if collision is active
         if (this.skierData.collisionEffectTimer > 0) {
             p.push();
             collisionEffectPushed = true;
-            
+
             if (this.skierData.collisionEffectTimer % 4 < 2) { // Flashing effect
                 p.tint(255, 100, 100); // Red tint
             }
@@ -67,36 +67,32 @@ export class SkierRenderer {
         let visualY = this.getVisualY(screenPos);
 
         // console.debug(`[renderer] Height above ground: ${heightAboveGround}, Skier Y: ${y}`);
-        
-        // Draw shadow when visually airborne (even if not in flying state)
-        // This is purely for visual effect and doesn't affect physics
-        if (this.skierData.showShadow) {
-            p.push();
-            // Draw an oval shadow on the ground (without the height adjustment)
-            const shadowY = groundedY; // Shadow is at ground level
-            const shadowWidth = this.skierData.width * 0.7; // Narrower than the skier
-            const shadowHeight = this.skierData.height * 0.2; // Flatter than the skier
-            
-            // Adjust shadow opacity based on height - higher means more transparent shadow
-            const shadowOpacity = Math.max(20, Math.min(120, 150 - heightAboveGround * 3));
-            
-            p.noStroke();
-            p.fill(0, 0, 0, shadowOpacity);
-            p.ellipse(x, shadowY, shadowWidth, shadowHeight);
-            p.pop();
-        }
 
         p.push();
-        
+        // Draw an oval shadow on the ground (without the height adjustment)
+        const shadowY = groundedY; // Shadow is at ground level
+        const shadowWidth = this.skierData.width * 0.7; // Narrower than the skier
+        const shadowHeight = this.skierData.height * 0.2; // Flatter than the skier
+
+        // Adjust shadow opacity based on height - higher means more transparent shadow
+        const shadowOpacity = Math.max(20, Math.min(50, 150 - heightAboveGround * 3));
+
+        p.noStroke();
+        p.fill(0, 0, 0, shadowOpacity);
+        p.ellipse(x, shadowY, shadowWidth, shadowHeight);
+        p.pop();
+
+        p.push();
+
         // Apply terrain rotation if not flying or crashed
         const isCrashed = this.skierData.currentState === SkierState.CRASHED;
         const isFlying = this.main.isFlying();
-        
+
         if (!isFlying && !isCrashed) {
             // Translate to the sprite's position, rotate, then draw
             p.translate(screenPos.x, visualY);
             p.rotate(this.skierData.currentRotation);
-            
+
             // Render the sprite at the origin (0,0) since we've translated to its position
             sprite.render(0, 0, this.skierData.width, this.skierData.height);
         } else {
@@ -104,7 +100,7 @@ export class SkierRenderer {
             p.translate(screenPos.x, visualY);
             sprite.render(0, 0, this.skierData.width, this.skierData.height);
         }
-        
+
         p.pop();
 
         // Only pop if we pushed for collision effect
@@ -146,7 +142,7 @@ export class SkierRenderer {
             hitbox.width,
             hitbox.height
         );
-        
+
         // Display height above ground in debug mode
         if (this.skierData.debug) {
             const heightAboveGround = this.skierData.zAxis - this.skierData.groundLevel;
