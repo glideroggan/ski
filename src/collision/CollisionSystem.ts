@@ -24,7 +24,12 @@ export class CollisionSystem {
                 if (i === j) continue;
                 
                 const entity2 = collidables[j];
-                const hitbox2 = entity2.getCollisionHitbox();
+                
+                // Skip collision checks between slalom gates and anything other than player
+                if (entity1.type === 'slalomGate' && entity2.type !== 'player') continue;
+                if (entity2.type === 'slalomGate' && entity1.type !== 'player') continue;
+                
+                const hitbox2 = entity2.getCollisionHitbox();       
                 
                 // Check for collision using AABB intersection
                 if (this.checkRectIntersection(hitbox1, hitbox2)) {

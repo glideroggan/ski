@@ -137,6 +137,23 @@ export class GameControls {
         } else if (this.p.key === '4') {
             this.game.weatherSystem.setWeatherState(WeatherState.BLIZZARD);
             console.debug("Weather set to BLIZZARD");
+        } 
+        // Slalom course controls
+        else if (this.p.key === 's' || this.p.key === 'S') {
+            if (!this.game.entityManager.isSlalomCourseActive()) {
+                this.game.entityManager.startSlalomCourse('easy', 10);
+                console.debug("Started easy slalom course");
+            }
+        } else if (this.p.key === 'm' || this.p.key === 'M') {
+            if (!this.game.entityManager.isSlalomCourseActive()) {
+                this.game.entityManager.startSlalomCourse('medium', 10);
+                console.debug("Started medium slalom course");
+            }
+        } else if (this.p.key === 'h' || this.p.key === 'H') {
+            if (!this.game.entityManager.isSlalomCourseActive()) {
+                this.game.entityManager.startSlalomCourse('hard', 10);
+                console.debug("Started hard slalom course");
+            }
         }
 
         // Turn off default behaviors for arrow keys and space bar

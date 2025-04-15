@@ -69,6 +69,7 @@ export class Obstacle implements RenderableObject, ICollidable {
         const config = Obstacle.typeConfig[this.type];
         this.width = config.width;
         this.height = config.height;
+        
         if (!this.sprite) {
             console.warn(`Sprite for ${this.type} is missing`);
         }
@@ -80,6 +81,8 @@ export class Obstacle implements RenderableObject, ICollidable {
 
         // Render the sprite
         if (this.sprite) {
+            // For rotated sprites, we already handle the rotation in the Sprite class
+            // We should use the original width/height, not swap them
             this.sprite.render(screenPos.x, screenPos.y, this.width, this.height);
         } else {
             // Fallback rendering if sprite is missing
@@ -166,6 +169,9 @@ export class Obstacle implements RenderableObject, ICollidable {
 
     public handleCollision(other: ICollidable): void {
         // Static obstacles don't do anything when collided with
+        // Ignore collisions with slalom gates to prevent unnecessary logging
+        if (other.type === 'slalomGate') return;
+        
         console.debug(`Obstacle ${this.type} was hit by ${other.type}`);
     }
 }

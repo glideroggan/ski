@@ -61,6 +61,9 @@ export class Game {
   // Track time since crash to show game over screen after a short delay
   private crashedTimeCounter: number = 0;
   private readonly gameOverDelay: number = 60; // Show game over screen after 1 second (60 frames at 60fps)
+  
+  // Temporary message system
+  private temporaryMessages: any[] = [];
 
   constructor(p: p5) {
     this.p = p;
@@ -152,7 +155,7 @@ export class Game {
             if (!('type' in entity)) return false;
             const type = entity.type as string;
             // Only include compatible collision types
-            return ['tree', 'rock', 'snowman', 'aiSkier', 'player'].includes(type);
+            return ['tree', 'rock', 'snowman', 'aiSkier', 'player', 'slalomGate'].includes(type);
           }) as ICollidable[]
       ];
       
@@ -240,6 +243,9 @@ export class Game {
 
     // Display controls information
     this.renderControlsInfo();
+
+    // Render temporary messages
+    this.renderTemporaryMessages();
   }
 
   private renderDynamicObjects(): void {
@@ -325,7 +331,15 @@ export class Game {
     this.p.fill(255);
     this.p.textSize(12);
     this.p.textAlign(this.p.RIGHT, this.p.BOTTOM);
-    this.p.text("LEFT/RIGHT: Turn | UP/DOWN: Adjust Speed | SPACE: Pause | D: Debug Mode", this.p.width - 10, this.p.height - 10);
+    
+    // Add slalom course controls info
+    if (this.entityManager.isSlalomCourseActive()) {
+      this.p.text("LEFT/RIGHT: Turn | UP/DOWN: Adjust Speed | SPACE: Pause | D: Debug Mode", this.p.width - 10, this.p.height - 30);
+      this.p.text("Slalom: Navigate between the gates to earn points!", this.p.width - 10, this.p.height - 10);
+    } else {
+      this.p.text("LEFT/RIGHT: Turn | UP/DOWN: Adjust Speed | SPACE: Pause | D: Debug Mode", this.p.width - 10, this.p.height - 30);
+      this.p.text("S/M/H: Start Easy/Medium/Hard Slalom Course", this.p.width - 10, this.p.height - 10);
+    }
 
     // Always show difficulty level even when not in debug mode
     this.renderDifficultyIndicator();
@@ -350,7 +364,12 @@ export class Game {
     const boxX = Math.floor(this.p.width - 210);
     const boxY = Math.floor(10);
     const boxWidth = 200;
-    const boxHeight = 80;
+    let boxHeight = 80;
+    
+    // Increase box height if slalom course is active
+    if (this.entityManager.isSlalomCourseActive()) {
+      boxHeight = 120; // Increased height for slalom info
+    }
 
     // Make background semi-transparent black
     this.p.fill(0, 128);
@@ -376,9 +395,22 @@ export class Game {
     const b = this.p.map(trailProgress, 0, 100, 50, 255);
     this.p.fill(r, g, b);
     this.p.rect(Math.floor(boxX + 10), Math.floor(boxY + 30), Math.floor(trailProgress * 1.8), 5);
-
-    // Restore the previous transformation state
-    // this.p.pop();
+    
+    // Display slalom course info if a course is active
+    if (this.entityManager.isSlalomCourseActive()) {
+      const passedGates = this.entityManager.getPassedGateCount();
+      const missedGates = this.entityManager.getMissedGateCount();
+      const totalGates = this.entityManager.getSlalomGateCount();
+      
+      // Draw slalom course header
+      this.p.fill(255, 220, 0); // Yellow for slalom info
+      this.p.text(`SLALOM COURSE`, Math.floor(boxX + 10), Math.floor(boxY + 75));
+      
+      // Draw gate stats
+      this.p.fill(255);
+      this.p.text(`Gates Passed: ${passedGates}`, Math.floor(boxX + 10), Math.floor(boxY + 95));
+      this.p.text(`Gates Missed: ${missedGates}`, Math.floor(boxX + 110), Math.floor(boxY + 95));
+    }
   }
 
   // Show pause indicator
@@ -546,7 +578,7 @@ export class Game {
     const padding = 10;
     const lineHeight = 20;
     const panelWidth = 250;
-    const panelHeight = 360; // Tall enough for all our debug info
+    const panelHeight = 400; // Increased to fit slalom gate info
     
     // Background panel with padding
     this.p.fill(0, 0, 0, 180);
@@ -561,6 +593,16 @@ export class Game {
     this.p.text(`Obstacles: ${this.entityManager.getObstacleCount()}`, padding + 10, y); y += lineHeight;
     this.p.text(`AI Skiers: ${this.entityManager.getAISkierCount()}`, padding + 10, y); y += lineHeight;
     this.p.text(`Crash Count: ${this.player.getCrashCount()}`, padding + 10, y); y += lineHeight;
+    
+    // Slalom gate info
+    this.p.text(`Slalom Gates: ${this.entityManager.getSlalomGateCount()}`, padding + 10, y); y += lineHeight;
+    this.p.text(`Course Active: ${this.entityManager.isSlalomCourseActive()}`, padding + 10, y); y += lineHeight;
+    
+    // Calculate passed and missed gates
+    const passedGates = this.entityManager.getPassedGateCount();
+    const missedGates = this.entityManager.getMissedGateCount();
+    this.p.text(`Gates Passed: ${passedGates}`, padding + 10, y); y += lineHeight;
+    this.p.text(`Gates Missed: ${missedGates}`, padding + 10, y); y += lineHeight;
     
     // Player info
     this.p.text(`Player Speed: ${this.player.getCurrentSpeed().toFixed(2)}`, padding + 10, y); y += lineHeight;
@@ -590,6 +632,28 @@ export class Game {
     y += 10; // Add some spacing
     this.p.text(`Weather: ${WeatherState[this.weatherSystem.getCurrentWeatherState()]}`, padding + 10, y); y += lineHeight;
     this.p.text(`Visibility: ${(100 - this.weatherSystem.getVisibilityFactor() * 100).toFixed(0)}%`, padding + 10, y);
+  }
+
+  /**
+   * Add a temporary message to be displayed on screen
+   * @param message The message to display, which must have a render method
+   */
+  public addTemporaryMessage(message: any): void {
+    this.temporaryMessages.push(message);
+  }
+  
+  /**
+   * Render any temporary messages on screen
+   */
+  private renderTemporaryMessages(): void {
+    // Filter and keep only active messages
+    this.temporaryMessages = this.temporaryMessages.filter(message => {
+      if (typeof message.render === 'function') {
+        // The render method should return true if the message should continue to be displayed
+        return message.render(this.p, this);
+      }
+      return false;
+    });
   }
 }
 

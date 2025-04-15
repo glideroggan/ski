@@ -205,4 +205,21 @@ export class Player extends SkierEntity {
     public isGrounded(): boolean {
         return this.skierData.isGrounded;
     }
+
+    /**
+     * Handle collisions specifically with slalom gates
+     * This method is called by SlalomGate when player interacts with a gate
+     * 
+     * @param hitPole Whether the player hit a pole (true) or passed through successfully (false)
+     */
+    public handleGateCollision(hitPole: boolean): void {
+        if (hitPole) {
+            // Only apply collision effect if player actually hit a pole
+            this.skierData.collisionEffectTimer = 20; // Shorter effect than tree/rock collisions
+            console.debug("Player hit a slalom gate pole");
+        } else {
+            // Successful pass - no collision effect needed
+            console.debug("Player successfully passed through a slalom gate");
+        }
+    }
 }

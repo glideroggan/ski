@@ -173,6 +173,7 @@
         </struct>
         <key>individualSpriteSettings</key>
         <map type="IndividualSpriteSettingsMap">
+            <key type="filename">final ski/obstacles/gate.png</key>
             <key type="filename">final ski/obstacles/rock.png</key>
             <key type="filename">final ski/obstacles/snowdrift.png</key>
             <key type="filename">final ski/obstacles/snowman.png</key>

@@ -134,14 +134,18 @@ export class SkierRenderer {
         p.stroke(0, 255, 0);
         p.circle(screenPos.x, screenPos.y, 10);
 
-        // Draw hitbox
-        p.stroke(255, 0, 0);
+        // Draw player hitbox with yellow color to distinguish from the red gates
+        // This makes it clearer that this is the player's actual collision area
+        p.noFill();
+        p.stroke(255, 255, 0); // Yellow color for player hitbox
+        p.strokeWeight(2);
         p.rect(
             screenPos.x - hitbox.width / 2,
             screenPos.y - hitbox.height / 2,
             hitbox.width,
             hitbox.height
         );
+        p.strokeWeight(1); // Reset stroke weight
 
         // Display height above ground in debug mode
         if (this.skierData.debug) {

@@ -104,19 +104,18 @@ export class Sprite {
       offsetY += (0.5 - this.pivotY) * scaledHeight;
       
       if (this.trimmed) {
-        // Convert TexturePacker offsets (which are from top-left)
-        // to our pivot-based coordinate system
+        // Apply trim offsets
         offsetX += (this.srcOffsetX * 2 - (this.origWidth - this.srcWidth)) * (scaledWidth / this.origWidth) / 2;
         offsetY += (this.srcOffsetY * 2 - (this.origHeight - this.srcHeight)) * (scaledHeight / this.origHeight) / 2;
       }
 
       this.spriteHeight = spriteHeight;
       
-      // Draw the sprite (accounting for trim and pivot offsets)
+      // Draw the sprite
       this.p.image(
         this.spriteSheet,
-        -spriteWidth / 2 + offsetX,  // Centered X + offset
-        -spriteHeight / 2 + offsetY, // Centered Y + offset
+        -spriteWidth / 2 + offsetX,    // Centered X + offset
+        -spriteHeight / 2 + offsetY,   // Centered Y + offset
         spriteWidth,
         spriteHeight,
         this.srcX,
@@ -128,43 +127,43 @@ export class Sprite {
     } else {
       // ROTATED SPRITES (rotated 90° clockwise in the atlas)
       
-      // For rotated sprites, we need to:
-      // 1. Apply a counter-rotation
-      // 2. Swap width/height for the sprite
-      // 3. Adjust positioning for trimming and pivot
-      this.p.rotate(-this.p.HALF_PI);
+      // For rotated sprites:
+      // - The frame dimensions in the JSON are the ORIGINAL dimensions 
+      // - But in the texture atlas, the sprite is physically rotated, so we need to swap dimensions when accessing the atlas
+      this.p.rotate(-this.p.HALF_PI);  // Rotate it back to its original orientation
       
-      // Calculate the dimensions of the sprite in the atlas (with width/height swapped)
-      const spriteWidth = this.srcHeight * (scaledWidth / this.origWidth);
-      const spriteHeight = this.srcWidth * (scaledHeight / this.origHeight);
+      // Use the original dimensions for scaling calculation
+      const spriteWidth = this.srcWidth * (scaledWidth / this.origWidth);
+      const spriteHeight = this.srcHeight * (scaledHeight / this.origHeight);
       
-      // Calculate offset from center for trimmed and rotated sprites
+      // Calculate offset from center for trimmed sprites and pivot
       let offsetX = 0;
       let offsetY = 0;
       
-      // Apply pivot offset for rotated sprites (with x/y swapped due to rotation)
+      // Apply pivot offset (with x/y swapped due to rotation)
       offsetY += (0.5 - this.pivotX) * scaledWidth;
       offsetX -= (0.5 - this.pivotY) * scaledHeight;
       
       if (this.trimmed) {
-        // For rotated sprites, the offsets need special handling
-        // X offset becomes Y offset and Y offset becomes X offset with sign changes
-        offsetY += (this.srcOffsetX * 2 - (this.origWidth - this.srcHeight)) * (scaledWidth / this.origWidth) / 2;
-        offsetX -= (this.srcOffsetY * 2 - (this.origHeight - this.srcWidth)) * (scaledHeight / this.origHeight) / 2;
+        // Apply trim offsets (also swapped for rotation)
+        offsetY += (this.srcOffsetX * 2 - (this.origWidth - this.srcWidth)) * (scaledWidth / this.origWidth) / 2;
+        offsetX -= (this.srcOffsetY * 2 - (this.origHeight - this.srcHeight)) * (scaledHeight / this.origHeight) / 2;
       }
       
-      this.spriteHeight = spriteHeight;
-      // Draw the sprite (accounting for rotation, trim offsets, and pivot)
+      this.spriteHeight = spriteWidth; // For rotated sprites, the height is the width
+      
+      // Draw the rotated sprite
+      // The key is swapping width/height when accessing the source in the atlas!
       this.p.image(
         this.spriteSheet,
-        -spriteHeight / 2 + offsetX, // Note: width and height are swapped in rotated context
+        -spriteHeight / 2 + offsetX,
         -spriteWidth / 2 + offsetY,
-        spriteHeight,
-        spriteWidth,
+        spriteHeight,                // Dest width (swapped)
+        spriteWidth,                 // Dest height (swapped)
         this.srcX,
         this.srcY,
-        this.srcWidth,
-        this.srcHeight
+        this.srcHeight,             // Source width (SWAPPED - this is key!)
+        this.srcWidth               // Source height (SWAPPED - this is key!)
       );
     }
     
@@ -172,7 +171,15 @@ export class Sprite {
     if (false) { // Set to false to disable debug visualization
       this.p.noFill();
       this.p.stroke(255, 0, 0);
-      this.p.rect(-scaledWidth/2, -scaledHeight/2, scaledWidth, scaledHeight);
+      
+      // For rotated sprites, we need to apply the same transformation to the debug box
+      if (this.rotated) {
+        // The bounding box should show the original dimensions (not the rotated ones)
+        this.p.rect(-scaledHeight/2, -scaledWidth/2, scaledHeight, scaledWidth);
+      } else {
+        // Normal bounding box for non-rotated sprites
+        this.p.rect(-scaledWidth/2, -scaledHeight/2, scaledWidth, scaledHeight);
+      }
       
       // Draw pivot point for debugging
       this.p.stroke(0, 255, 0);

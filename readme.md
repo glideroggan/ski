@@ -5,7 +5,7 @@ The game area should scroll itself and player controls the character to left and
 Can also increase their speed by pressing down
 
 # BUGS
-- ✔️put back heightmap rotation, so it looks more "bumpy"
+- fix the collision when going through the gates
 - menu showing distance covered needs adjustments, we should calculate meter better
 - menu showing number of crashes, which is not needed
 - skiier left falling is offsetted badly in the sprite
@@ -46,6 +46,67 @@ Special Equipment: Allow player to find and use items like goggles to improve vi
 
 
 ## IDEAS
+### Slalom Gates
+Slalom gates will create focused challenge areas where players must navigate between pairs of flags. This adds skill-based challenges to break up normal obstacle avoidance gameplay.
+
+Bugs:
+- rotated obstacles are totally read/rendered wrong
+- we need to adjust the collision box for the gates
+- we need to adjust the "success" box for the gates
+
+Implementation Steps:
+- [ ] Create SlalomGate entity class
+  - [ ] Design gate visuals (red and blue flags with connecting banner)
+  - [ ] Implement collision detection for passing between gates
+  - [ ] Add visual feedback when gates are successfully passed
+
+- [ ] Gate Placement System:
+  - [ ] Design course patterns (easy, medium, hard)
+  - [ ] Implement course section spawn logic in EntityManager
+  - [ ] Create spacing logic to ensure gates are positioned properly
+
+- [ ] Difficulty Progression:
+  - [ ] Easy: Wide gates with generous spacing
+  - [ ] Medium: Moderate width gates with rhythm changes
+  - [ ] Hard: Narrow gates with tight turns
+
+- [ ] Scoring & Rewards:
+  - [ ] Add points for each gate successfully passed
+  - [ ] Implement bonus multiplier for consecutive gates
+  - [ ] Create special reward for completing an entire section
+
+- [ ] Technical Components:
+  - [ ] Track missed/hit gates with counter
+  - [ ] Add timer for slalom sections
+  - [ ] Implement visual/audio cues for success/failure
+
+### Jump Ramps
+Jump ramps would utilize the existing snowdrift mechanics but with added gameplay elements for performing tricks and getting air time.
+
+Implementation Ideas:
+
+Ramp Types:
+Small Kickers: Easy jumps for beginners
+Medium Jumps: Good height but manageable landings
+Big Air: Massive jumps with higher risk/reward
+Physics Enhancement:
+Air control (limited steering while airborne)
+Trick system (pressing combinations of keys during jumps)
+Landing mechanics (land straight or crash)
+Visual Effects:
+Trail effects during jumps
+Character animations for tricks
+Landing impact effects
+Scoring System:
+Points for air time
+Multipliers for trick complexity
+Clean landing bonuses
+Technical Implementation:
+
+Extend the existing snowdrift heightmap to create dedicated jump ramps
+Add jump detection when player crosses the lip of a ramp at sufficient speed
+Implement an in-air state with special physics
+Create landing detection with success/failure conditions
 ### Map progression
 - once you finsh the first slope on the mountain, you will see a map of your progression, which will show additional slopes...
   - 🔧develop the idea

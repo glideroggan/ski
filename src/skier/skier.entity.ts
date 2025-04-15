@@ -25,7 +25,7 @@ export enum SkierState {
     CRASHED
 }
 
-export type EntityType = 'player' | 'aiSkier' | 'tree' | 'rock' | 'snowman' | 'snowdrift';
+export type EntityType = 'player' | 'aiSkier' | 'tree' | 'rock' | 'snowman' | 'snowdrift' | 'slalomGate';
 
 /**
  * Shared data structure for skier entities
