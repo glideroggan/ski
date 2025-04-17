@@ -35,32 +35,23 @@ Can also increase their speed by pressing down
 
 
 # To implement
-
-# Improvements to weather changes
-Advanced Implementation Ideas
-Weather Zones: Create regions on the map with different typical weather patterns
-Weather Warning System: Visual/audio cues before weather changes
-Special Equipment: Allow player to find and use items like goggles to improve visibility in storms
-
-## FEATURES
-
-
-## IDEAS
-### Slalom Gates
+## Slalom Gates
 Slalom gates will create focused challenge areas where players must navigate between pairs of flags. This adds skill-based challenges to break up normal obstacle avoidance gameplay.
 
 Bugs:
-- rotated obstacles are totally read/rendered wrong
+- Still counted as crash going through the gates
+- we should remove the color of the gates
+- ✔️rotated obstacles are totally read/rendered wrong
 - we need to adjust the collision box for the gates
 - we need to adjust the "success" box for the gates
 
 Implementation Steps:
-- [ ] Create SlalomGate entity class
-  - [ ] Design gate visuals (red and blue flags with connecting banner)
-  - [ ] Implement collision detection for passing between gates
-  - [ ] Add visual feedback when gates are successfully passed
+- ✔️ Create SlalomGate entity class
+  - ✔️ Design gate visuals (red and blue flags with connecting banner)
+  - ✔️ Implement collision detection for passing between gates
+  - ✔️ Add visual feedback when gates are successfully passed
 
-- [ ] Gate Placement System:
+- ✔️ Gate Placement System:
   - [ ] Design course patterns (easy, medium, hard)
   - [ ] Implement course section spawn logic in EntityManager
   - [ ] Create spacing logic to ensure gates are positioned properly
@@ -80,6 +71,16 @@ Implementation Steps:
   - [ ] Add timer for slalom sections
   - [ ] Implement visual/audio cues for success/failure
 
+# Improvements to weather changes
+Advanced Implementation Ideas
+Weather Zones: Create regions on the map with different typical weather patterns
+Weather Warning System: Visual/audio cues before weather changes
+Special Equipment: Allow player to find and use items like goggles to improve visibility in storms
+
+## FEATURES
+
+
+## IDEAS
 ### Jump Ramps
 Jump ramps would utilize the existing snowdrift mechanics but with added gameplay elements for performing tricks and getting air time.
 
