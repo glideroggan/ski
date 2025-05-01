@@ -1,0 +1,10 @@
+services:
+  app:
+    image: glideroggan/ski-app:latest
+    build:
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    container_name: ski-app
