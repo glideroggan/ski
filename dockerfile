@@ -12,7 +12,7 @@ RUN yarn install
 # Copy the source code
 COPY tsconfig.json esbuild.config.js ./
 COPY src/ ./src/
-COPY dist/assets ./dist/assets
+COPY assets/ ./assets/
 
 # Set environment variable for production build
 ENV NODE_ENV=production
@@ -33,6 +33,9 @@ RUN echo 'server { \
     listen 3001; \
     root /usr/share/nginx/html; \
     index index.html; \
+    location /assets/ { \
+        try_files $uri =404; \
+    } \
     location / { \
         try_files $uri $uri/ /index.html; \
     } \
