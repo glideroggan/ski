@@ -23,7 +23,7 @@ RUN yarn build
 # RUN npx tsc --declaration --emitDeclarationOnly --outDir dist/algorithms src/algorithms/BaseElevatorAlgorithm.ts src/algorithms/IElevatorAlgorithm.ts
 
 # Stage 2: Serve the application with Nginx
-FROM nginx:stable-alpine-slim
+FROM nginx:stable-alpine3.23-slim
 
 # Copy the built files to Nginx's serve directory
 COPY --from=build /app/dist /usr/share/nginx/html
