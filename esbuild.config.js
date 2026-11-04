@@ -24,6 +24,10 @@ const context = await build.context({
   sourcemap: !isProduction,
   platform: 'browser',
   target: ['es2020'],
+  // The bundled p5 sets regeneratorRuntime and, when that assignment throws (an undeclared global in strict mode),
+  // falls back to Function(...), which a script-src without 'unsafe-eval' blocks. Declaring the variable first keeps it
+  // from throwing. A directive only counts at the very start of a file, so the banner repeats esbuild's "use strict".
+  banner: { js: '"use strict";var regeneratorRuntime;' },
   loader: { 
     '.ts': 'ts', 
     '.js': 'js',

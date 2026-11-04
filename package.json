@@ -8,7 +8,8 @@
     "build": "node esbuild.config.js",
     "dev": "node esbuild.config.js --watch",
     "watch": "tsc --emitDeclarationOnly -w",
-    "start": "yarn build"
+    "start": "yarn build",
+    "test:csp": "node tests/csp-check.mjs"
   },
   "dependencies": {
     "p5": "^1.7.0"
@@ -17,6 +18,7 @@
     "@types/p5": "^1.6.2",
     "esbuild": "^0.19.2",
     "esbuild-plugin-copy": "^2.1.1",
+    "playwright-core": "1.63.0",
     "typescript": "^5.1.6"
   }
 }

@@ -21,12 +21,9 @@ export class Player extends SkierEntity {
      * Load player-specific assets
      */
     protected loadAssets(variantType: number): void {
-        // Create sprite atlas
-        const spriteAtlas = new SpriteAtlas(this.skierData.p);
-        
-        // Load the TexturePacker atlas
-        spriteAtlas.loadAtlas('assets/player.json', 'assets/player.png')
-            .then(() => {
+        // Through the game's cache: a restart must not need the network, as the pod may be asleep by then
+        this.skierData.game.loadSpriteAtlas('player', 'assets/player.json', 'assets/player.png')
+            .then((spriteAtlas) => {
                 console.debug("Player sprite atlas loaded successfully");
                 this.setupSpritesFromAtlas(spriteAtlas);
                 this.skierData.assetsLoaded = true;

@@ -1,7 +1,9 @@
 # ski — AI Agent Guidelines
 
 A TypeScript ski game (p5.js-style, esbuild-bundled) served as a static site via nginx.
-Playable at `https://nyviken.se/games/ski`. Deployer workload: `game-ski`.
+Deployer workload: `game-ski`, an on-demand app reached through Deployer's proxy at
+`https://nyviken.se/deployer-api/service/game-ski/` (the card's `app_url` label). nginx has no `/games/ski` route.
+The proxy answers under an enforcing `script-src 'self'`: no CDN scripts, no inline scripts, no eval.
 
 ---
 
@@ -29,6 +31,10 @@ yarn dev
 
 # Production build
 yarn build
+
+# CSP check: plays dist under Deployer's policy with no server, including a restart while the pod sleeps
+# (needs a Chromium that playwright-core finds)
+NODE_ENV=production yarn build && yarn test:csp
 ```
 
 ## Docker
@@ -81,5 +87,5 @@ assets/               # Sprites and images
 ## Vulnerability Remediation
 
 - Base image bumps are **Tier 1** — update `dockerfile` `FROM` line, rebuild, push, trigger hook
-- No tests to run before push (static site)
+- Run `yarn test:csp` after a production build before push (the only test)
 - After push, re-scan: `GET https://nyviken.se/deployer-api/vulnerabilities/game-ski`
