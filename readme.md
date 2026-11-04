@@ -1,8 +1,10 @@
 # Run and check
 - `yarn build` builds into `dist/`; `yarn dev` serves it on port 3001 (watch mode).
 - On the server the game sits behind Deployer's proxy (`/deployer-api/service/game-ski/`), which sends
-  `script-src 'self'`. p5 is bundled, so there is no CDN script. `NODE_ENV=production yarn build && yarn test:csp` loads
-  the build under that policy and fails on a missing canvas, a page error or a policy violation.
+  `script-src 'self'`. p5 is bundled, so there is no CDN script. `NODE_ENV=production yarn build && yarn test:csp` plays
+  the build under that policy: an arrow key, a crash, and a restart while the pod sleeps (the proxy then answers every
+  request with its loading page). It fails on a non-strict bundle, no canvas, no skier or obstacles, a page error, a
+  `console.error` or a policy violation.
 
 # Description
 Create a silly ski game

@@ -32,7 +32,8 @@ yarn dev
 # Production build
 yarn build
 
-# CSP check: loads dist under Deployer's policy with no server (needs a Chromium that playwright-core finds)
+# CSP check: plays dist under Deployer's policy with no server, including a restart while the pod sleeps
+# (needs a Chromium that playwright-core finds)
 NODE_ENV=production yarn build && yarn test:csp
 ```
 
