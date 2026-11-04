@@ -120,12 +120,10 @@ export class EntityManager {
      * Load obstacle sprites and atlas
      */
     private loadAssets(): void {
-        // Load obstacle atlas
-        const obstacleAtlas = new SpriteAtlas(this.p);
-        obstacleAtlas.loadAtlas('assets/obstacles.json', 'assets/obstacles.png')
+        // Through the game's cache: a restart must not need the network, as the pod may be asleep by then
+        this.game.loadSpriteAtlas('obstacles', 'assets/obstacles.json', 'assets/obstacles.png')
             .then(() => {
                 console.debug("Obstacle sprite atlas loaded successfully");
-                this.game.spriteAtlases.set('obstacles', obstacleAtlas);
                 this.atlasLoaded = true;
             })
             .catch(err => {
